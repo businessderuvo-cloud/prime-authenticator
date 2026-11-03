@@ -35,6 +35,12 @@ Il sistema operativo può offrire il PIN/codice del dispositivo come verifica ut
 
 L’archivio GitHub contiene i file web dell’app. **Non è un APK Android né un IPA iOS e non si installa aprendolo**: per installare sul telefono usa il link HTTPS qui sopra e segui i passaggi Android o iPhone.
 
+## APK Android di prova
+
+[Scarica l’APK Android](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-android-debug-v0.3.1.apk)
+
+L’APK è una piccola app Android che apre PRIME Authenticator nel browser Chrome tramite una scheda personalizzata sicura. In questo modo scansione fotocamera, archivio sul dominio PRIME e verifiche biometriche restano nel contesto web supportato. È una build di prova firmata con la chiave debug automatica di GitHub Actions, non una build firmata per Google Play. Per installarla, scarica l’APK, aprilo e autorizza l’installazione da questa origine quando Android lo chiede.
+
 ## Note tecniche
 
 L’approvazione QR richiede la connessione al servizio PRIME e deve essere avviata dal dominio primegestionale.it. L’archivio cifrato è locale e vincolato all’origine dell’app; un archivio creato su un’altra origine non sostituisce quello dell’app pubblica.

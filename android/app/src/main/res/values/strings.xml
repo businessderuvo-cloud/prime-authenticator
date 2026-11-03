@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PRIME Authenticator</string>
+    <string name="authenticator_url">https://primegestionale.it/authenticator/</string>
+</resources>
