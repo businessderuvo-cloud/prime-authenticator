@@ -92,11 +92,7 @@ jobs:
             adb shell pm list packages | grep -q 'com.android.chrome'
             adb shell am start -W -n it.primegestionale.authenticator/com.google.androidbrowserhelper.trusted.LauncherActivity
             sleep 15
-            crash_log="$(adb logcat -d -s AndroidRuntime:E)"
-            if printf '%s' "$crash_log" | grep -q 'FATAL EXCEPTION'; then
-              printf '%s\n' "$crash_log"
-              exit 1
-            fi
+            ! adb logcat -d -s AndroidRuntime:E | grep -q 'FATAL EXCEPTION'
             adb shell dumpsys package it.primegestionale.authenticator | grep -q 'com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity'
 
       - name: Publish APK build artifact

@@ -1,4 +1,4 @@
-const cache='prime-authenticator-20261103-twa-v4';
+const cache='prime-authenticator-20261103-original-shield-v5';
 const files=['./','./index.html','./main.js','./crypto.js','./prime-qr.js','./biometric.js','./qr-decoder.js','./style.css','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 const allowed=new Set(files.map(f=>new URL(f,self.location).pathname));
 self.addEventListener('install',e=>e.waitUntil(caches.open(cache).then(c=>c.addAll(files)).then(()=>self.skipWaiting())));
