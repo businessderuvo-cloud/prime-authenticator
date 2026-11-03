@@ -27,7 +27,7 @@ Biometric/passkey support depends on the device's screen lock and browser. Devic
 
 ## PWA source archive
 
-[Download the PWA source archive](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-pwa-v0.4.0.zip)
+[Download the PWA source archive](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-pwa-v0.4.1.zip)
 
 This archive is source files, not an Android APK or iOS IPA. For QR pairing and approval, the PRIME service must be online.
 
