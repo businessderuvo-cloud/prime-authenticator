@@ -67,7 +67,7 @@ jobs:
           set -eu
           apk='android/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='8' versionName='1.0.1'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='9' versionName='1.0.2'"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "launchable-activity: name='it.primegestionale.authenticator.MainActivity'"
 
       - name: Enable KVM for Android emulator
@@ -101,7 +101,7 @@ jobs:
       - name: Publish APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: prime-authenticator-android-v1.0.1
+          name: prime-authenticator-android-v1.0.2
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30

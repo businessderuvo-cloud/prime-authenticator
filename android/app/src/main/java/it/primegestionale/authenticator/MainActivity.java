@@ -34,7 +34,7 @@ public final class MainActivity extends FragmentActivity {
     private VaultStore store;private BiometricLock biometric;private BiometricPrompt prompt;
     private LinearLayout page,codes;private TextView status;private EditText passwordInput,confirmInput;
     private JSONArray entries=new JSONArray();private char[] password;private int generation=0;private boolean busy=false,externalFlow=false,biometricPending=false;
-    private long activeAt;private String pendingQr,exportEnvelope;private AlertDialog qrDialog;private boolean stopped=true;
+    private long activeAt;private String pendingQr,exportEnvelope;private AlertDialog qrDialog;private boolean stopped=true,autoBiometricOnResume=true;
     private final Map<TextView,JSONObject> codeLabels=new HashMap<>();
     private final ActivityResultLauncher<ScanOptions> scanner=registerForActivityResult(new ScanContract(), result->{
         externalFlow=false;
@@ -53,8 +53,15 @@ public final class MainActivity extends FragmentActivity {
     @Override public void onCreate(Bundle state){super.onCreate(state);getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);store=new VaultStore(this);biometric=new BiometricLock(this);readIntent(getIntent());showLock();handler.post(tick);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readIntent(intent);if(password!=null)resumeQr();}
     private void readIntent(Intent intent){if(intent.getData()!=null){try{PrimeProtocol.parse(intent.getData().toString());pendingQr=intent.getData().toString();}catch(Exception ignored){pendingQr=null;}}}
-    @Override protected void onResume(){super.onResume();stopped=false;if(password!=null&&SystemClock.elapsedRealtime()-activeAt>60000)lock();}
-    @Override protected void onStop(){super.onStop();stopped=true;if(!externalFlow)lock();}
+    @Override protected void onResume(){
+        super.onResume();stopped=false;if(password!=null&&SystemClock.elapsedRealtime()-activeAt>60000)lock();
+        if(autoBiometricOnResume){
+            // Once per foreground entry: cancel/password choice must not reopen the prompt.
+            autoBiometricOnResume=false;final int g=generation;
+            handler.post(()->{if(!stopped&&g==generation&&password==null&&!externalFlow&&!busy&&!biometricPending&&store.exists()&&biometric.enabled()&&biometric.availability()==BiometricManager.BIOMETRIC_SUCCESS)authenticate(false);});
+        }
+    }
+    @Override protected void onStop(){super.onStop();stopped=true;if(!externalFlow){autoBiometricOnResume=true;lock();}}
     @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);if(prompt!=null)prompt.cancelAuthentication();wipe();worker.shutdownNow();super.onDestroy();}
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent event){activeAt=SystemClock.elapsedRealtime();return super.dispatchTouchEvent(event);}
     @Override public void onUserInteraction(){super.onUserInteraction();activeAt=SystemClock.elapsedRealtime();}
@@ -79,7 +86,7 @@ public final class MainActivity extends FragmentActivity {
     private void showLock(){root();LinearLayout p=panel(store.exists()?"Sblocca il tuo archivio":"Crea il tuo archivio");p.addView(text("Archivio cifrato salvato su questo telefono.",14,MUTED));passwordInput=field(p,"Password archivio (almeno 12 caratteri)",true);confirmInput=store.exists()?null:field(p,"Ripeti la password",true);button(p,store.exists()?"Sblocca":"Crea archivio",true,this::unlockPassword);
         if(store.exists()&&biometric.enabled())button(p,"Sblocca con impronta / volto",false,()->authenticate(false));
         button(p,"Importa backup cifrato",false,()->{externalFlow=true;importer.launch(new String[]{"application/json","text/plain","application/octet-stream"});});
-        page.addView(text("Prima usavi la versione web? Esporta lì un backup cifrato e importalo qui con la stessa password.",13,MUTED));page.addView(text("Android nativa · 1.0.1",12,MUTED));
+        page.addView(text("Prima usavi la versione web? Esporta lì un backup cifrato e importalo qui con la stessa password.",13,MUTED));page.addView(text("Android nativa · 1.0.2",12,MUTED));
     }
     private interface Work<T>{T run()throws Exception;}
     private interface Result<T>{void run(T value)throws Exception;}

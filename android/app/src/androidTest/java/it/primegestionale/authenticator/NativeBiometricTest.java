@@ -72,13 +72,21 @@ public class NativeBiometricTest {
                 // A fresh operation cannot decrypt even immediately after a successful auth.
                 try{lock.finishUnlock(lock.beginUnlock());fail("Keystore decrypted without a new sensor authentication");}catch(java.security.GeneralSecurityException expected){}
                 click("Blocca archivio");click("Sblocca con impronta / volto");waitText("Sblocca PRIME Authenticator");
-                click("Usa password");waitText("Sblocca");assertFalse(device.hasObject(By.text("Scansiona QR")));
+                click("Usa password");waitText("Sblocca");SystemClock.sleep(1200);assertFalse(device.hasObject(By.text("Sblocca PRIME Authenticator")));assertFalse(device.hasObject(By.text("Scansiona QR")));
                 click("Sblocca con impronta / volto");waitText("Sblocca PRIME Authenticator");
                 pulse("1");assertNotNull(device.wait(Until.findObject(By.text("Archivio sbloccato con la biometria Android.")),30000));
                 assertNotNull(device.findObject(By.text("Scansiona QR")));
             }
             // Configuration survives a full Activity exit; the next key use needs another touch.
             try(ActivityScenario<MainActivity> activity=ActivityScenario.launch(MainActivity.class)){
+                // No click: the system prompt must appear by itself on reopening.
+                waitText("Sblocca PRIME Authenticator");pulse("1");
+                assertNotNull(device.wait(Until.findObject(By.text("Archivio sbloccato con la biometria Android.")),30000));
+                activity.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
+                activity.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+                waitText("Sblocca PRIME Authenticator");click("Usa password");
+                waitText("Sblocca");SystemClock.sleep(1200);
+                assertFalse("Cancelling automatic unlock reopened the prompt",device.hasObject(By.text("Sblocca PRIME Authenticator")));
                 click("Sblocca con impronta / volto");waitText("Sblocca PRIME Authenticator");pulse("1");
                 assertNotNull(device.wait(Until.findObject(By.text("Archivio sbloccato con la biometria Android.")),30000));
             }
