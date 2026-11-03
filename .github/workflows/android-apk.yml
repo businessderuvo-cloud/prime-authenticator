@@ -41,7 +41,7 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.PRIME_ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.PRIME_ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          set -euo pipefail
+          set -eu
           test -n "$ANDROID_KEYSTORE_BASE64"
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           key_store="$RUNNER_TEMP/prime-authenticator-release.p12"
@@ -64,7 +64,7 @@ jobs:
       - name: Verify APK signature and TWA manifest
         shell: bash
         run: |
-          set -euo pipefail
+          set -eu
           apk='android/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='6' versionName='0.4.1'"
@@ -86,7 +86,7 @@ jobs:
           emulator-boot-timeout: 600
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             adb logcat -c
             adb install android/app/build/outputs/apk/release/app-release.apk
             adb shell pm list packages | grep -q 'com.android.chrome'
