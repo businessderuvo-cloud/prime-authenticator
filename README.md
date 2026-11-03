@@ -1,48 +1,34 @@
 # PRIME Authenticator
 
-Versione web installabile 0.3.0, pubblicata per Android, iPhone/iPad e browser desktop.
+PRIME Authenticator is available as an installable web app for Android, iPhone/iPad, and desktop browsers. Android also has a signed APK that opens the authenticator as a full-screen app without a browser address bar.
 
-**Installazione diretta:** [primegestionale.it/authenticator](https://primegestionale.it/authenticator/)
+**Open or install:** [primegestionale.it/authenticator](https://primegestionale.it/authenticator/)
 
-Questa distribuzione è una Progressive Web App (PWA). Si installa dal browser e usa l’origine primegestionale.it per le API di abbinamento e approvazione QR.
+## Android APK
 
-## Android
+[Download PRIME Authenticator 0.4.0 APK](https://github.com/businessderuvo-cloud/prime-authenticator/releases/download/android-v0.4.0/prime-authenticator-android-v0.4.0.apk)
 
-1. Apri il link d’installazione in Chrome.
-2. Scegli **Installa app**; se non compare, apri il menu e seleziona **Installa app** o **Aggiungi a schermata Home**.
+Install the APK and allow Android to install apps from the download source when prompted. If you already installed the earlier 0.3.1 debug APK, uninstall it first: Android does not allow updating an app signed with a different release key. The encrypted archive belongs to the browser origin and is not removed by uninstalling the APK; still keep an encrypted backup.
 
-## iPhone e iPad
+The Android app uses a verified Trusted Web Activity associated with `primegestionale.it` through Digital Asset Links. The association must remain available at `/.well-known/assetlinks.json` for the app to keep opening full-screen in Chrome.
 
-1. Apri il link in Safari.
-2. Premi **Condividi** → **Aggiungi alla schermata Home** e abilita **Apri come app web** se proposto.
+## iPhone and iPad
 
-## Altri browser
+Open the link in Safari, choose **Share** → **Add to Home Screen**, and enable **Open as Web App** if shown. The iOS distribution is the installable web app; no native IPA is published.
 
-Su Chrome ed Edge usa il comando di installazione del browser. Firefox e Safari desktop possono eseguire la PWA nel browser; l’installazione come app dipende dal browser e dal sistema.
+## Features
 
-## Funzioni
+- Scan and approve PRIME login QR codes.
+- Store TOTP codes offline in an encrypted, device-local vault.
+- Unlock the vault with a platform passkey using device verification where browser, device, and PRF support it; otherwise use the vault password.
+- Revoke paired devices from PRIME → Account security.
 
-- Abbinamento del dispositivo e approvazione dell’accesso PRIME tramite scansione QR.
-- Archivio TOTP cifrato localmente e codici utilizzabili offline.
-- Sblocco biometrico tramite passkey del dispositivo, dove browser e sistema supportano WebAuthn PRF; password dell’archivio come alternativa.
-- Revoca dei dispositivi da PRIME → Sicurezza account.
+Biometric/passkey support depends on the device's screen lock and browser. Device biometrics are never sent to PRIME.
 
-Il sistema operativo può offrire il PIN/codice del dispositivo come verifica utente. I dati biometrici non vengono inviati a PRIME.
+## PWA source archive
 
-## Download GitHub
+[Download the PWA source archive](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-pwa-v0.4.0.zip)
 
-[Scarica l’archivio sorgente PWA](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-pwa-v0.3.0.zip)
+This archive is source files, not an Android APK or iOS IPA. For QR pairing and approval, the PRIME service must be online.
 
-L’archivio GitHub contiene i file web dell’app. **Non è un APK Android né un IPA iOS e non si installa aprendolo**: per installare sul telefono usa il link HTTPS qui sopra e segui i passaggi Android o iPhone.
-
-## APK Android di prova
-
-[Scarica l’APK Android](https://github.com/businessderuvo-cloud/prime-authenticator/releases/latest/download/prime-authenticator-android-debug-v0.3.1.apk)
-
-L’APK è una piccola app Android che apre PRIME Authenticator nel browser Chrome tramite una scheda personalizzata sicura. In questo modo scansione fotocamera, archivio sul dominio PRIME e verifiche biometriche restano nel contesto web supportato. È una build di prova firmata con la chiave debug automatica di GitHub Actions, non una build firmata per Google Play. Per installarla, scarica l’APK, aprilo e autorizza l’installazione da questa origine quando Android lo chiede.
-
-## Note tecniche
-
-L’approvazione QR richiede la connessione al servizio PRIME e deve essere avviata dal dominio primegestionale.it. L’archivio cifrato è locale e vincolato all’origine dell’app; un archivio creato su un’altra origine non sostituisce quello dell’app pubblica.
-
-Per la libreria QR di terze parti vedere [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the QR decoder license.

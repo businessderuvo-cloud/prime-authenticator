@@ -24,7 +24,7 @@ async function prf(credential,salt){
 export async function enableBiometric(password){
  if(typeof password!=='string'||password.length<12)throw Error('Sblocca prima il tuo archivio con la password.');
  if(!await biometricAvailable())throw Error('Biometria non disponibile in questo browser. Apri l’app in Safari su iPhone o Chrome su Android, con blocco dispositivo attivo.');
- const salt=random(),credential=await navigator.credentials.create({publicKey:{challenge:random(),rp:{name:'PRIME Authenticator'},user:{id:random(),name:'PRIME Authenticator',displayName:'Archivio PRIME su questo dispositivo'},pubKeyCredParams:[{type:'public-key',alg:-7}],authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'preferred',userVerification:'required'},attestation:'none',timeout:60000,extensions:{prf:{eval:{first:salt}}}}});
+ const salt=random(),credential=await navigator.credentials.create({publicKey:{challenge:random(),rp:{name:'PRIME Authenticator'},user:{id:random(),name:'PRIME Authenticator',displayName:'Archivio PRIME su questo dispositivo'},pubKeyCredParams:[{type:'public-key',alg:-7}],authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'required',requireResidentKey:true,userVerification:'required'},attestation:'none',timeout:60000,extensions:{prf:{eval:{first:salt}}}}});
  if(!credential||!credential.getClientExtensionResults()?.prf?.enabled)throw Error('La credenziale creata non supporta lo sblocco cifrato PRF. La password dell’archivio rimane necessaria.');
  const key=await prf(credential.rawId,salt),iv=crypto.getRandomValues(new Uint8Array(12));
  const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:aad()},key,new TextEncoder().encode(password));

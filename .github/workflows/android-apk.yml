@@ -1,10 +1,10 @@
-name: Build Android APK
+name: Build Android TWA APK
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - 'android-test-*'
+      - 'android-v*'
 
 permissions:
   contents: read
@@ -35,17 +35,44 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Build debug APK
-        working-directory: android
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Configure release signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.PRIME_ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.PRIME_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          key_store="$RUNNER_TEMP/prime-authenticator-release.p12"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$key_store"
+          key_info="$(keytool -list -v -keystore "$key_store" -storetype PKCS12 -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null)"
+          key_alias="$(printf '%s\n' "$key_info" | sed -n 's/^Alias name: //p' | head -n 1)"
+          certificate_sha256="$(printf '%s\n' "$key_info" | sed -n 's/.*SHA256: //p' | head -n 1 | tr -d ':')"
+          expected_sha256='34B0A0DBF3BECB281611424FF1CFF481AD03173B93A6D6AEB5021566A5174E19'
+          test -n "$key_alias"
+          test "$certificate_sha256" = "$expected_sha256"
+          echo "ANDROID_KEYSTORE_PATH=$key_store" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$key_alias" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "Using the configured PRIME Android release certificate ($certificate_sha256)."
 
-      - name: Verify APK signature
-        run: "$ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose android/app/build/outputs/apk/debug/app-debug.apk"
+      - name: Build signed release APK
+        working-directory: android
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Verify APK signature and TWA manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk='android/app/build/outputs/apk/release/app-release.apk'
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='5' versionName='0.4.0'"
 
       - name: Publish APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: prime-authenticator-android-debug-v0.3.1
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: prime-authenticator-android-v0.4.0
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
