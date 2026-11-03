@@ -11,12 +11,12 @@ adb shell locksettings set-pin 1234
 # real BiometricPrompt and auth-per-use Keystore; there is no production bypass.
 (
   while true; do
-    request="$(adb shell cat /data/local/tmp/prime-finger-request 2>/dev/null | tr -d '\r' || true)"
+    request="$(adb shell run-as it.primegestionale.authenticator cat files/prime-finger-request 2>/dev/null | tr -d '\r' || true)"
     if [ -n "$request" ]; then
       if [ "$request" = enroll ]; then
         adb emu finger touch 1 >/dev/null
       else
-        adb shell rm -f /data/local/tmp/prime-finger-request
+        adb shell run-as it.primegestionale.authenticator rm -f files/prime-finger-request
         adb emu finger touch "$request" >/dev/null
       fi
       sleep 0.15

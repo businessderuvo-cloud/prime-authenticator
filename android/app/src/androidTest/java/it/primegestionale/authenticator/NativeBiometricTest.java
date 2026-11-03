@@ -22,8 +22,11 @@ public class NativeBiometricTest {
     private final UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     private Context context(){return InstrumentationRegistry.getInstrumentation().getTargetContext();}
     private boolean available(){return new BiometricLock(context()).availability()==BiometricManager.BIOMETRIC_SUCCESS;}
-    private void pulse(String finger)throws Exception{device.executeShellCommand("sh -c 'echo "+finger+" > /data/local/tmp/prime-finger-request'");}
-    private void clearPulse()throws Exception{device.executeShellCommand("rm -f /data/local/tmp/prime-finger-request");}
+    private File requestFile(){return new File(context().getFilesDir(),"prime-finger-request");}
+    private void pulse(String finger)throws Exception{
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(requestFile())){out.write(finger.getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+    }
+    private void clearPulse(){requestFile().delete();}
     private UiObject2 waitText(String text){UiObject2 item=device.wait(Until.findObject(By.text(text)),15000);assertNotNull("Missing UI: "+text,item);return item;}
     private void click(String text)throws Exception{
         if(!device.hasObject(By.text(text)))new UiScrollable(new UiSelector().scrollable(true)).scrollTextIntoView(text);
