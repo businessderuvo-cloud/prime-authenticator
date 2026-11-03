@@ -1,10 +1,10 @@
 # PRIME Authenticator
 
-## App Android nativa 1.0.1
+## App Android nativa 1.0.2
 
-[Scarica APK Android](https://github.com/businessderuvo-cloud/prime-authenticator/releases/download/android-v1.0.1/prime-authenticator-android-v1.0.1.apk)
+[Scarica APK Android](https://github.com/businessderuvo-cloud/prime-authenticator/releases/download/android-v1.0.2/prime-authenticator-android-v1.0.2.apk)
 
-Schermate, archivio, codici TOTP, fotocamera e sblocco sono eseguiti dall’app sul telefono. La versione Android 1.0.1 non contiene WebView, Custom Tabs o TWA e non avvia Chrome. Android 7 o successivo.
+Schermate, archivio, codici TOTP, fotocamera e sblocco sono eseguiti dall’app sul telefono. La versione Android 1.0.2 non contiene WebView, Custom Tabs o TWA e non avvia Chrome. Android 7 o successivo.
 
 - Archivio locale AES-256-GCM, password derivata con PBKDF2-HMAC-SHA256 (600.000 iterazioni).
 - Impronta o volto con Android BiometricPrompt e chiave Android Keystore vincolata a una verifica biometrica per operazione. La biometria deve essere registrata nelle impostazioni Android; il riconoscimento del volto è disponibile se Android lo classifica come biometria forte.
@@ -12,6 +12,8 @@ Schermate, archivio, codici TOTP, fotocamera e sblocco sono eseguiti dall’app 
 - Abbinamento e approvazione degli accessi QR PRIME tramite API HTTPS, con firma ECDSA P-256 del dispositivo.
 - Blocco all’uscita dall’app e dopo un minuto di inattività.
 - Backup cifrato compatibile con l’archivio della precedente versione web.
+
+Con la biometria già attiva, la richiesta del sensore appare automaticamente all’apertura e al ritorno nell’app. Annullando puoi usare la password; il dialogo non si ripresenta finché non riapri l’app o premi il pulsante per riprovare.
 
 ### Passaggio dalla versione precedente
 
