@@ -59,7 +59,7 @@ public final class MainActivity extends FragmentActivity {
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent event){activeAt=SystemClock.elapsedRealtime();return super.dispatchTouchEvent(event);}
     @Override public void onUserInteraction(){super.onUserInteraction();activeAt=SystemClock.elapsedRealtime();}
     @Override public void onBackPressed(){if(password!=null){lock();return;}super.onBackPressed();}
-    private final Runnable tick=new Runnable(){public void run(){if(password!=null&&!externalFlow&&!biometricPending&&SystemClock.elapsedRealtime()-activeAt>60000)lock();else updateCodes();handler.postDelayed(this,1000);}};
+    private final Runnable tick=new Runnable(){public void run(){if(password!=null&&!biometricPending&&SystemClock.elapsedRealtime()-activeAt>60000)lock();else updateCodes();handler.postDelayed(this,1000);}};
     private void wipe(){if(password!=null)Arrays.fill(password,'\0');password=null;entries=new JSONArray();codeLabels.clear();}
     private void lock(){generation++;busy=false;if(prompt!=null)prompt.cancelAuthentication();biometricPending=false;wipe();if(qrDialog!=null){qrDialog.dismiss();qrDialog=null;}if(page!=null)showLock();}
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}

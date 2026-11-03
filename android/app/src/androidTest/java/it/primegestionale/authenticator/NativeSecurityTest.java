@@ -57,12 +57,12 @@ public class NativeSecurityTest {
         context().deleteFile("prime-vault.json");new BiometricLock(context()).disable();UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         try(ActivityScenario<MainActivity> activity=ActivityScenario.launch(MainActivity.class)){
             UiObject2 create=device.wait(Until.findObject(By.text("Crea archivio")),10000);assertNotNull(create);
-            java.util.List<UiObject2> fields=device.findObjects(By.clazz("android.widget.EditText"));assertEquals(2,fields.size());for(UiObject2 f:fields)f.setText("Native-test-password-123");create.click();
+            java.util.List<UiObject2> fields=device.findObjects(By.clazz("android.widget.EditText"));assertEquals(2,fields.size());for(UiObject2 f:fields)f.setText("Native-test-password-123");device.pressBack();create.click();
             assertTrue(device.wait(Until.hasObject(By.text("Scansiona QR")),30000));assertEquals(context().getPackageName(),device.getCurrentPackageName());
             activity.onActivity(a->assertNative(a.getWindow().getDecorView()));
             device.findObject(By.text("Blocca archivio")).click();assertTrue(device.wait(Until.hasObject(By.text("Sblocca")),10000));
             device.findObject(By.clazz("android.widget.EditText")).setText("Native-test-password-123");device.findObject(By.text("Sblocca")).click();assertTrue(device.wait(Until.hasObject(By.text("Scansiona QR")),30000));
-            device.findObject(By.text("Attiva biometria sul telefono")).click();assertNotNull(device.wait(Until.findObject(By.textContains("Biometria Android")),10000));
+            new UiScrollable(new UiSelector().scrollable(true)).scrollTextIntoView("Attiva biometria sul telefono");device.findObject(By.text("Attiva biometria sul telefono")).click();assertNotNull(device.wait(Until.findObject(By.textContains("Biometria Android")),10000));
         }finally{context().deleteFile("prime-vault.json");new BiometricLock(context()).disable();}
     }
 }
