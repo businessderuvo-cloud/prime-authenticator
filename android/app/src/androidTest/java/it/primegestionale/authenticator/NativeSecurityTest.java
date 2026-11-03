@@ -57,7 +57,9 @@ public class NativeSecurityTest {
         context().deleteFile("prime-vault.json");new BiometricLock(context()).disable();UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         try(ActivityScenario<MainActivity> activity=ActivityScenario.launch(MainActivity.class)){
             UiObject2 create=device.wait(Until.findObject(By.text("Crea archivio")),10000);assertNotNull(create);
-            java.util.List<UiObject2> fields=device.findObjects(By.clazz("android.widget.EditText"));assertEquals(2,fields.size());for(UiObject2 f:fields)f.setText("Native-test-password-123");device.pressBack();create.click();
+            java.util.List<UiObject2> fields=device.findObjects(By.clazz("android.widget.EditText"));assertEquals(2,fields.size());for(UiObject2 f:fields)f.setText("Native-test-password-123");
+            activity.onActivity(a->((android.view.inputmethod.InputMethodManager)a.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(a.getWindow().getDecorView().getWindowToken(),0));
+            device.waitForIdle();device.wait(Until.findObject(By.text("Crea archivio")),5000).click();
             assertTrue(device.wait(Until.hasObject(By.text("Scansiona QR")),30000));assertEquals(context().getPackageName(),device.getCurrentPackageName());
             activity.onActivity(a->assertNative(a.getWindow().getDecorView()));
             device.findObject(By.text("Blocca archivio")).click();assertTrue(device.wait(Until.hasObject(By.text("Sblocca")),10000));

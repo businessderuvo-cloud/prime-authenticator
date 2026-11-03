@@ -118,7 +118,7 @@ public final class MainActivity extends FragmentActivity {
                 @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result){
                     if(g!=generation||stopped)return;biometricPending=false;
                     try{Cipher verified=result.getCryptoObject()==null?null:result.getCryptoObject().getCipher();if(verified==null)throw new Exception("Verifica crittografica Android non completata.");
-                        if(enabling){if(password==null)throw new Exception("Sblocca prima l’archivio.");biometric.finishEnable(verified,password);showVault();notice("Biometria Android attivata. Ora puoi bloccare e sbloccare con il sensore.");}
+                        if(enabling){if(password==null)throw new Exception("Sblocca prima l’archivio.");biometric.finishEnable(verified,password);activeAt=SystemClock.elapsedRealtime();showVault();notice("Biometria Android attivata. Ora puoi bloccare e sbloccare con il sensore.");}
                         else{char[] recovered=biometric.finishUnlock(verified);task("Apertura archivio…",()->{try{return store.unlock(recovered);}catch(Exception e){Arrays.fill(recovered,'\0');throw e;}finally{if(g!=generation)Arrays.fill(recovered,'\0');}},rows->{password=recovered;entries=rows;activeAt=SystemClock.elapsedRealtime();showVault();notice("Archivio sbloccato con la biometria Android.");resumeQr();});}
                     }catch(Exception e){notice(error(e));}
                 }
