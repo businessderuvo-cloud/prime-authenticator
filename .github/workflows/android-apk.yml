@@ -28,7 +28,7 @@ jobs:
           packages: platform-tools
 
       - name: Install Android build components
-        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platform-tools" "emulator" "platforms;android-36" "build-tools;36.0.0" "system-images;android-36;google_apis_playstore;x86_64"
 
       - name: Set up Gradle 8.11.1
         uses: gradle/actions/setup-gradle@v4
@@ -67,12 +67,34 @@ jobs:
           set -euo pipefail
           apk='android/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='5' versionName='0.4.0'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='6' versionName='0.4.1'"
+
+      - name: Launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis_playstore
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb logcat -c
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            adb shell pm list packages | grep -q 'com.android.chrome'
+            adb shell am start -W -n it.primegestionale.authenticator/com.google.androidbrowserhelper.trusted.LauncherActivity
+            sleep 15
+            crash_log="$(adb logcat -d -s AndroidRuntime:E)"
+            if printf '%s' "$crash_log" | grep -q 'FATAL EXCEPTION'; then
+              printf '%s\n' "$crash_log"
+              exit 1
+            fi
+            adb shell dumpsys package it.primegestionale.authenticator | grep -q 'com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity'
 
       - name: Publish APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: prime-authenticator-android-v0.4.0
+          name: prime-authenticator-android-v0.4.1
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
