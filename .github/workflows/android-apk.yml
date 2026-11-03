@@ -1,4 +1,4 @@
-name: Build Android TWA APK
+name: Build native Android APK
 
 on:
   workflow_dispatch:
@@ -57,17 +57,18 @@ jobs:
           echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "Using the configured PRIME Android release certificate ($certificate_sha256)."
 
-      - name: Build signed release APK
+      - name: Build native APK and security tests
         working-directory: android
-        run: gradle --no-daemon :app:assembleRelease
+        run: gradle --no-daemon :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest
 
-      - name: Verify APK signature and TWA manifest
+      - name: Verify APK signature and native launcher
         shell: bash
         run: |
           set -eu
           apk='android/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='6' versionName='0.4.1'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='7' versionName='1.0.0'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "launchable-activity: name='it.primegestionale.authenticator.MainActivity'"
 
       - name: Enable KVM for Android emulator
         run: |
@@ -85,20 +86,12 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           emulator-boot-timeout: 600
           disable-animations: true
-          script: |
-            set -eu
-            adb logcat -c
-            adb install android/app/build/outputs/apk/release/app-release.apk
-            adb shell pm list packages | grep -q 'com.android.chrome'
-            adb shell am start -W -n it.primegestionale.authenticator/com.google.androidbrowserhelper.trusted.LauncherActivity
-            sleep 15
-            ! adb logcat -d -s AndroidRuntime:E | grep -q 'FATAL EXCEPTION'
-            adb shell dumpsys package it.primegestionale.authenticator | grep -q 'com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity'
+          script: bash ci/native-smoke.sh
 
       - name: Publish APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: prime-authenticator-android-v0.4.1
+          name: prime-authenticator-android-v1.0.0
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30

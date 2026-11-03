@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">PRIME Authenticator</string>
-    <string name="authenticator_url">https://primegestionale.it/authenticator/?native=android</string>
-    <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://primegestionale.it/\"}}]</string>
 </resources>
