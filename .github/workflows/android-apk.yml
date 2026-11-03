@@ -67,7 +67,7 @@ jobs:
           set -eu
           apk='android/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='7' versionName='1.0.0'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.authenticator' versionCode='8' versionName='1.0.1'"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "launchable-activity: name='it.primegestionale.authenticator.MainActivity'"
 
       - name: Enable KVM for Android emulator
@@ -83,15 +83,25 @@ jobs:
           target: google_apis_playstore
           arch: x86_64
           profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
           emulator-boot-timeout: 600
           disable-animations: true
           script: bash ci/native-smoke.sh
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-results
+          path: |
+            *test-results.txt
+            biometric-failure.xml
+            biometric-logcat.txt
+
       - name: Publish APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: prime-authenticator-android-v1.0.0
+          name: prime-authenticator-android-v1.0.1
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30

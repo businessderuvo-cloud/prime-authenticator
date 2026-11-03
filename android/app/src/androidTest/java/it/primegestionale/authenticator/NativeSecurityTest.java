@@ -64,6 +64,14 @@ public class NativeSecurityTest {
             activity.onActivity(a->assertNative(a.getWindow().getDecorView()));
             device.findObject(By.text("Blocca archivio")).click();assertTrue(device.wait(Until.hasObject(By.text("Sblocca")),10000));
             device.findObject(By.clazz("android.widget.EditText")).setText("Native-test-password-123");device.findObject(By.text("Sblocca")).click();assertTrue(device.wait(Until.hasObject(By.text("Scansiona QR")),30000));
+            device.findObject(By.text("Scansiona QR")).click();
+            assertNotNull(device.wait(Until.findObject(By.text("Inquadra il QR PRIME o TOTP")),10000));
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                java.util.Collection<android.app.Activity> resumed=androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED);
+                assertTrue(resumed.stream().anyMatch(a->a instanceof PortraitCaptureActivity&&a.getRequestedOrientation()==android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT&&a.getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_PORTRAIT));
+            });
+            assertTrue("Scanner rotated the phone to landscape",device.getDisplayHeight()>device.getDisplayWidth());
+            device.pressBack();assertTrue(device.wait(Until.hasObject(By.text("Scansiona QR")),10000));
             new UiScrollable(new UiSelector().scrollable(true)).scrollTextIntoView("Attiva biometria sul telefono");device.findObject(By.text("Attiva biometria sul telefono")).click();assertNotNull(device.wait(Until.findObject(By.textContains("Biometria Android")),10000));
         }finally{context().deleteFile("prime-vault.json");new BiometricLock(context()).disable();}
     }

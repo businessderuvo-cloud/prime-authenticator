@@ -28,21 +28,33 @@ public final class BiometricLock {
             .setKeySize(256).setUserAuthenticationRequired(true).setInvalidatedByBiometricEnrollment(true);
         if(Build.VERSION.SDK_INT>=30)spec.setUserAuthenticationParameters(0,KeyProperties.AUTH_BIOMETRIC_STRONG);
         else spec.setUserAuthenticationValidityDurationSeconds(-1);
-        g.init(spec.build());Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,g.generateKey());c.updateAAD(AAD);return c;
+        g.init(spec.build());Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,g.generateKey());return c;
     }
     public void finishEnable(Cipher cipher,char[] password)throws Exception{
         byte[] raw=new String(password).getBytes(StandardCharsets.UTF_8);
-        try {byte[] wrapped=cipher.doFinal(raw);if(!prefs.edit().putString("iv",VaultStore.b64(cipher.getIV())).putString("cipher",VaultStore.b64(wrapped)).commit())throw new Exception("Impossibile salvare la configurazione biometrica.");}
+        // An auth-per-use Keystore operation must not receive even AAD before
+        // BiometricPrompt authorizes it. Some devices cache that error until doFinal.
+        try {cipher.updateAAD(AAD);byte[] wrapped=cipher.doFinal(raw);if(!prefs.edit().putString("iv",VaultStore.b64(cipher.getIV())).putString("cipher",VaultStore.b64(wrapped)).commit())throw new Exception("Impossibile salvare la configurazione biometrica.");}
         finally{Arrays.fill(raw,(byte)0);}
     }
     public Cipher beginUnlock()throws Exception{
         KeyStore s=KeyStore.getInstance("AndroidKeyStore");s.load(null);SecretKey key=(SecretKey)s.getKey(ALIAS,null);
         if(key==null)throw new Exception("Sblocca con la password e riattiva la biometria.");
-        Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key,new GCMParameterSpec(128,VaultStore.un64(prefs.getString("iv",""))));c.updateAAD(AAD);return c;
+        Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key,new GCMParameterSpec(128,VaultStore.un64(prefs.getString("iv",""))));return c;
     }
     public char[] finishUnlock(Cipher cipher)throws Exception{
-        byte[] plain=cipher.doFinal(VaultStore.un64(prefs.getString("cipher","")));
+        cipher.updateAAD(AAD);byte[] plain=cipher.doFinal(VaultStore.un64(prefs.getString("cipher","")));
         try{return new String(plain,StandardCharsets.UTF_8).toCharArray();}finally{Arrays.fill(plain,(byte)0);}
+    }
+    public static String failureMessage(Exception error){
+        for(Throwable cause=error;cause!=null;cause=cause.getCause()){
+            if(cause instanceof android.security.keystore.KeyPermanentlyInvalidatedException)
+                return "La registrazione biometrica del telefono è cambiata. Sblocca con la password, disattiva e riattiva la biometria.";
+            if(cause instanceof android.security.keystore.UserNotAuthenticatedException)
+                return "Android non ha autorizzato la chiave. Riprova la verifica sul sensore; puoi sempre usare la password.";
+        }
+        // Report only the exception type, never vault data or provider payloads.
+        return "Verifica biometrica non completata ("+error.getClass().getSimpleName()+"). Riprova o sblocca con la password.";
     }
     public String availabilityMessage(){
         int result=availability();

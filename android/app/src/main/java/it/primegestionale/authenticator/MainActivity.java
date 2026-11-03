@@ -79,7 +79,7 @@ public final class MainActivity extends FragmentActivity {
     private void showLock(){root();LinearLayout p=panel(store.exists()?"Sblocca il tuo archivio":"Crea il tuo archivio");p.addView(text("Archivio cifrato salvato su questo telefono.",14,MUTED));passwordInput=field(p,"Password archivio (almeno 12 caratteri)",true);confirmInput=store.exists()?null:field(p,"Ripeti la password",true);button(p,store.exists()?"Sblocca":"Crea archivio",true,this::unlockPassword);
         if(store.exists()&&biometric.enabled())button(p,"Sblocca con impronta / volto",false,()->authenticate(false));
         button(p,"Importa backup cifrato",false,()->{externalFlow=true;importer.launch(new String[]{"application/json","text/plain","application/octet-stream"});});
-        page.addView(text("Prima usavi la versione web? Esporta lì un backup cifrato e importalo qui con la stessa password.",13,MUTED));page.addView(text("Android nativa · 1.0.0",12,MUTED));
+        page.addView(text("Prima usavi la versione web? Esporta lì un backup cifrato e importalo qui con la stessa password.",13,MUTED));page.addView(text("Android nativa · 1.0.1",12,MUTED));
     }
     private interface Work<T>{T run()throws Exception;}
     private interface Result<T>{void run(T value)throws Exception;}
@@ -96,7 +96,7 @@ public final class MainActivity extends FragmentActivity {
         task("Apertura archivio…",()->{try{JSONArray rows=fresh?new JSONArray():store.unlock(input);if(fresh)store.save(rows,input);return rows;}catch(Exception e){Arrays.fill(input,'\0');throw e;}finally{if(g!=generation)Arrays.fill(input,'\0');}},rows->{password=input;entries=rows;activeAt=SystemClock.elapsedRealtime();showVault();resumeQr();});
     }
     private void showVault(){
-        root();LinearLayout actions=panel(null);button(actions,"Scansiona QR",true,()->{externalFlow=true;scanner.launch(new ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("Inquadra il QR PRIME o TOTP").setBeepEnabled(false).setOrientationLocked(false));});
+        root();LinearLayout actions=panel(null);button(actions,"Scansiona QR",true,()->{externalFlow=true;scanner.launch(new ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("Inquadra il QR PRIME o TOTP").setBeepEnabled(false).setCaptureActivity(PortraitCaptureActivity.class).setOrientationLocked(true));});
         button(actions,"Incolla QR o chiave",false,this::manualQr);button(actions,"Esporta backup cifrato",false,()->{try{exportEnvelope=store.backup();externalFlow=true;exporter.launch("prime-authenticator-backup.json");}catch(Exception e){notice(error(e));}});button(actions,"Blocca archivio",false,this::lock);
         LinearLayout bio=panel("Impronta e riconoscimento volto");bio.addView(text(biometric.enabled()?"Sblocco biometrico Android attivo.":biometric.availabilityMessage(),14,MUTED));
         button(bio,biometric.enabled()?"Disattiva biometria":"Attiva biometria sul telefono",false,()->{if(biometric.enabled()){try{biometric.disable();showVault();notice("Sblocco biometrico disattivato.");}catch(Exception e){notice(error(e));}}else authenticate(true);});
@@ -120,11 +120,11 @@ public final class MainActivity extends FragmentActivity {
                     try{Cipher verified=result.getCryptoObject()==null?null:result.getCryptoObject().getCipher();if(verified==null)throw new Exception("Verifica crittografica Android non completata.");
                         if(enabling){if(password==null)throw new Exception("Sblocca prima l’archivio.");biometric.finishEnable(verified,password);activeAt=SystemClock.elapsedRealtime();showVault();notice("Biometria Android attivata. Ora puoi bloccare e sbloccare con il sensore.");}
                         else{char[] recovered=biometric.finishUnlock(verified);task("Apertura archivio…",()->{try{return store.unlock(recovered);}catch(Exception e){Arrays.fill(recovered,'\0');throw e;}finally{if(g!=generation)Arrays.fill(recovered,'\0');}},rows->{password=recovered;entries=rows;activeAt=SystemClock.elapsedRealtime();showVault();notice("Archivio sbloccato con la biometria Android.");resumeQr();});}
-                    }catch(Exception e){notice(error(e));}
+                    }catch(Exception e){notice(BiometricLock.failureMessage(e));}
                 }
             });
             prompt.authenticate(new BiometricPrompt.PromptInfo.Builder().setTitle(enabling?"Attiva biometria PRIME":"Sblocca PRIME Authenticator").setSubtitle("Usa il sensore del telefono").setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG).setNegativeButtonText("Usa password").build(),new BiometricPrompt.CryptoObject(cipher));
-        }catch(Exception e){biometricPending=false;notice("Biometria Android non disponibile: sblocca con la password e riattivala. "+error(e));}
+        }catch(Exception e){biometricPending=false;notice(BiometricLock.failureMessage(e));}
     }
     private void readBackup(Uri uri){task("Lettura backup…",()->{try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new Exception("File non disponibile.");ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){bytes.write(buf,0,n);if(bytes.size()>600000)throw new Exception("Backup troppo grande.");}return new String(bytes.toByteArray(),StandardCharsets.UTF_8);}},this::importBackup);}
     private void importBackup(String envelope){
