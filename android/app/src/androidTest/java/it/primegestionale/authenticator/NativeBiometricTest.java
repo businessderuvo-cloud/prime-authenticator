@@ -22,7 +22,7 @@ public class NativeBiometricTest {
     private final UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     private Context context(){return InstrumentationRegistry.getInstrumentation().getTargetContext();}
     private boolean available(){return new BiometricLock(context()).availability()==BiometricManager.BIOMETRIC_SUCCESS;}
-    private void pulse(String finger)throws Exception{device.executeShellCommand("echo "+finger+" > /data/local/tmp/prime-finger-request");}
+    private void pulse(String finger)throws Exception{device.executeShellCommand("sh -c 'echo "+finger+" > /data/local/tmp/prime-finger-request'");}
     private void clearPulse()throws Exception{device.executeShellCommand("rm -f /data/local/tmp/prime-finger-request");}
     private UiObject2 waitText(String text){UiObject2 item=device.wait(Until.findObject(By.text(text)),15000);assertNotNull("Missing UI: "+text,item);return item;}
     private void click(String text)throws Exception{

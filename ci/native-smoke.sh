@@ -19,6 +19,8 @@ adb shell locksettings set-pin 1234
         adb shell rm -f /data/local/tmp/prime-finger-request
         adb emu finger touch "$request" >/dev/null
       fi
+      sleep 0.15
+      adb emu finger remove >/dev/null
     fi
     sleep 0.7
   done
