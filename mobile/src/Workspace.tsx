@@ -1487,6 +1487,7 @@ export default function Workspace({
                       <Text style={styles.number}>{euro(1250)}</Text>
                     </View>
                   </View>
+                  <FinanceChart color={c.accent} muted={c.muted} />
                   <Text style={styles.h3}>Pagamenti recenti</Text>
                   {stripeDemoPayments.map((payment) => (
                     <View key={payment.customer} style={styles.panel}>
@@ -1535,6 +1536,7 @@ export default function Workspace({
               </View>
             ))}
             <Text style={styles.h2}>Movimenti</Text>
+            <FinanceChart color="#49a774" muted={c.muted} />
             {movements.map((r, i) => (
               <View style={styles.panel} key={text(r.record_id || i)}>
                 <Text style={styles.h3}>{text(r.description)}</Text>
@@ -2094,6 +2096,26 @@ export default function Workspace({
     </SafeAreaView>
   );
 }
+function FinanceChart({ color, muted }: { color: string; muted: string }) {
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ color: muted, fontSize: 12 }}>Andamento ultimi 30 giorni</Text>
+        <Text style={{ color, fontSize: 12, fontWeight: "700" }}>↗ +12,4%</Text>
+      </View>
+      <Svg height={120} width="100%" viewBox="0 0 320 120" preserveAspectRatio="none">
+        <Path d="M0 102H320M0 72H320M0 42H320M0 112L38 95 76 101 114 63 152 76 190 48 228 57 266 25 320 36V120H0Z" fill={color} opacity={0.12} />
+        <Path d="M0 112L38 95 76 101 114 63 152 76 190 48 228 57 266 25 320 36" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        {['1 nov', '8 nov', '15 nov', '22 nov', 'oggi'].map((label) => (
+          <Text key={label} style={{ color: muted, fontSize: 10 }}>{label}</Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function makeStyles(c: typeof palettes.light) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.bg },
