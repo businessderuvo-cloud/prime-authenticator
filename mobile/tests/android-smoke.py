@@ -9,9 +9,12 @@ def tap(label,timeout=50,scroll=False):
     while time.time()<until:
         root=tree()
         for n in root.iter('node'):
-            if n.get('text')==label or n.get('content-desc')==label:
+            visible=n.get('visible-to-user','true')=='true'
+            if visible and (n.get('text')==label or n.get('content-desc')==label):
                 bounds=n.get('bounds').replace('][',',').replace('[','').replace(']','').split(',')
                 x1,y1,x2,y2=map(int,bounds)
+                if x2<=0 or y2<=0 or x1>=1080 or y1>=1920:
+                    continue
                 adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));return
         if scroll: adb('shell','input','swipe','540','1600','540','600','400')
         time.sleep(2)
