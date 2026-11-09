@@ -56,7 +56,7 @@ jobs:
           NODE_ENV: production
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --console=plain
+          ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --build-cache --max-workers=3 -Pkotlin.compiler.execution.strategy=in-process --console=plain
       - name: Verify signature, package and embedded application
         run: |
           set -eu
@@ -65,8 +65,8 @@ jobs:
           "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.mobile'"
           unzip -l "$apk" | grep -F 'assets/index.android.bundle'
           mkdir -p release
-          cp "$apk" release/PRIME-Mobile-Android-v0.2.0.apk
-          (cd release && sha256sum PRIME-Mobile-Android-v0.2.0.apk > SHA256SUMS.txt)
+          cp "$apk" release/PRIME-Mobile-Android-v0.2.1.apk
+          (cd release && sha256sum PRIME-Mobile-Android-v0.2.1.apk > SHA256SUMS.txt)
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -85,7 +85,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PRIME-Mobile-Android-v0.2.0
+          name: PRIME-Mobile-Android-v0.2.1
           path: mobile/release/*
           if-no-files-found: error
           retention-days: 30
@@ -94,7 +94,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=mobile-android-v0.2.0
+          tag=mobile-android-v0.2.1
           cat > release/notes.md <<'NOTES'
           Prima versione di prova di PRIME Mobile per Android 64 bit (arm64).
 
@@ -105,7 +105,7 @@ jobs:
           L’app Authenticator già presente nel repository rimane separata e le sue release non vengono modificate.
           NOTES
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.0.apk release/SHA256SUMS.txt release/*.png --clobber
+            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.1.apk release/SHA256SUMS.txt release/*.png --clobber
           else
-            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.0.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.0 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
+            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.1.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.1 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
           fi

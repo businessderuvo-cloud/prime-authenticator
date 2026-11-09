@@ -20,22 +20,28 @@ def expect(text,timeout=50):
     until=time.time()+timeout
     while time.time()<until:
         root=tree()
-        if any(text in n.get('text','') for n in root.iter('node')):
+        if any(text in (n.get('text','')+' '+n.get('content-desc','')) for n in root.iter('node')):
             assert not any(n.get('class')=='android.webkit.WebView' for n in root.iter('node'))
             return
         time.sleep(2)
     adb('logcat','-d')
     raise AssertionError('Text not found: '+text)
-def shot(name): (out/name).write_bytes(adb('exec-out','screencap','-p'))
+def shot(name):
+    until=time.time()+30
+    while time.time()<until:
+        if not any(n.get('class')=='android.widget.ProgressBar' for n in tree().iter('node')): break
+        time.sleep(1)
+    (out/name).write_bytes(adb('exec-out','screencap','-p'))
 try:
     adb('install','-r','android/app/build/outputs/apk/release/app-release.apk')
     adb('shell','am','start','-n','it.primegestionale.mobile/.MainActivity')
     tap('Entra nella demo pubblica')
     expect('Ogni connessione conta.');shot('01-panoramica.png')
-    tap('Cambia piano ▾');tap('Secret Plan');expect('Secret Plan · Demo pubblica')
+    tap('Cambia piano ▾');tap('Secret Plan');expect('Secret Plan · Demo pubblica');shot('02-secret.png')
     tap('Scegli tema');tap('Blu VIP');expect('Ogni connessione conta.');shot('02-tema-vip.png')
-    tap('Apri menu');expect('Esigenze acquirenti');shot('03-menu.png');tap('PRIME Connect',scroll=True)
-    expect('PRIME Connect');expect('Google Calendar');shot('04-connect.png')
+    tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
+    expect('PRIME Connect');expect('Google Calendar');expect('Servizio configurato sulla piattaforma.');shot('04-connect.png')
 finally:
+    shot('05-last-state.png')
     (out/'android-ui.xml').write_bytes(adb('shell','cat','/sdcard/prime-ui.xml'))
     (out/'android-logcat.txt').write_bytes(adb('logcat','-d','-t','500'))

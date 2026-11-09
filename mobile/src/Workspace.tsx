@@ -12,6 +12,7 @@ import {
   RefreshControl,
   Linking,
   Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -22,6 +23,7 @@ import icons from "./site-icons.json";
 import definitions from "./site-schema.json";
 import brand from "./brand.json";
 import NativeMap from "./NativeMap";
+import { metricValue } from "./site-metrics";
 type Field = {
   label: string;
   type: string;
@@ -136,6 +138,9 @@ const sections = [
   ["map", "Mappa immobiliare"],
   ["agents", "Agenti"],
   ["contacts", "CRM · Persone"],
+  ["contact_methods", "Recapiti CRM"],
+  ["contact_interactions", "Interazioni CRM"],
+  ["unit_contacts", "Relazioni e ruoli"],
   ["properties", "Immobili in gestione"],
   ["activities", "WPS"],
   ["appointments", "Agenda appuntamenti"],
@@ -193,6 +198,10 @@ const providers = [
   ["contactout", "ContactOut", "/brands/providers/contactout.png"],
   ["datagma", "Datagma", ""],
 ];
+const referenceLabel = (rows: Row[], id: unknown) => {
+  const row = rows.find((r) => r.id === id);
+  return String(row?.title || row?.email || "Seleziona…");
+};
 const euro = (v: unknown) =>
   new Intl.NumberFormat("it-IT", {
     style: "currency",
@@ -434,7 +443,12 @@ export default function Workspace({
     for (const [key, f] of Object.entries(schema[entity].fields)) {
       let value = values[key];
       if (f.type === "number")
-        value = value === "" || value == null ? null : Number(value);
+        value =
+          value === "" || value == null
+            ? null
+            : Number(String(value).replace(",", "."));
+      if (f.type === "number" && value !== null && !Number.isFinite(value))
+        throw Error(f.label + ": inserisci un numero valido.");
       if (f.type === "checkbox") value = Boolean(value);
       if (f.type === "ref" && value === "") value = null;
       body[key] = value;
@@ -552,7 +566,11 @@ export default function Workspace({
           <Icon color={c.accent} name="menu" />
         </Pressable>
         <SvgXml
-          xml={theme === "light" ? brand.light : brand.dark}
+          xml={
+            theme === "light"
+              ? brand.light
+              : brand.dark.replaceAll("#eef2f5", c.accent)
+          }
           width={90}
           height={30}
         />
@@ -665,27 +683,31 @@ export default function Workspace({
                 ["offers", "Proposte in attesa"],
                 ["leases", "Locazioni attive"],
                 ["commissions", "Provvigioni incassate"],
-              ].map(([id, label]) => (
-                <Pressable key={id} style={styles.stat} onPress={() => nav(id)}>
-                  <View style={styles.iconTile}>
-                    <Icon color={c.accent} name={id} size={27} />
-                  </View>
-                  <Text style={styles.muted}>{label}</Text>
-                  <Text style={styles.number}>
-                    {id === "commissions"
-                      ? euro(
-                          (data[id] || [])
-                            .filter((r) => r.status === "incassata")
-                            .reduce((n, r) => n + Number(r.amount || 0), 0),
-                        )
-                      : (data[id] || []).length}
-                  </Text>
-                  <View style={styles.row}>
-                    <Text style={[styles.tiny, { flex: 1 }]}>Apri sezione</Text>
-                    <Icon color={c.accent} name="arrow" size={16} />
-                  </View>
-                </Pressable>
-              ))}
+              ]
+                .filter(([id]) => me.edition !== "base" || id !== "commissions")
+                .map(([id, label]) => (
+                  <Pressable
+                    key={id}
+                    style={styles.stat}
+                    onPress={() => nav(id)}
+                  >
+                    <View style={styles.iconTile}>
+                      <Icon color={c.accent} name={id} size={27} />
+                    </View>
+                    <Text style={styles.muted}>{label}</Text>
+                    <Text style={styles.number}>
+                      {id === "commissions"
+                        ? euro(metricValue(id, data[id] || []))
+                        : metricValue(id, data[id] || [])}
+                    </Text>
+                    <View style={styles.row}>
+                      <Text style={[styles.tiny, { flex: 1 }]}>
+                        Apri sezione
+                      </Text>
+                      <Icon color={c.accent} name="arrow" size={16} />
+                    </View>
+                  </Pressable>
+                ))}
             </View>
             <View style={styles.panel}>
               <Text style={styles.eyebrow}>OPERATIVITÀ</Text>
@@ -1122,9 +1144,17 @@ export default function Workspace({
         onRequestClose={() => setMenu(false)}
       >
         <SafeAreaView style={styles.root}>
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView contentContainerStyle={[styles.content, { gap: 4 }]}>
             <View style={styles.row}>
-              <SvgXml xml={brand.dark} width={130} height={34} />
+              <SvgXml
+                xml={
+                  theme === "light"
+                    ? brand.light
+                    : brand.dark.replaceAll("#eef2f5", c.accent)
+                }
+                width={130}
+                height={34}
+              />
               <View style={{ flex: 1 }} />
               {button("Chiudi", () => setMenu(false))}
             </View>
@@ -1278,9 +1308,10 @@ export default function Workspace({
                     >
                       <Text style={styles.text}>
                         {f.entity
-                          ? (data[f.entity] || []).find(
-                              (r) => r.id === editing.values[key],
-                            )?.title || "Seleziona…"
+                          ? referenceLabel(
+                              data[f.entity] || [],
+                              editing.values[key],
+                            )
                           : text(editing.values[key]) || "Seleziona…"}
                       </Text>
                     </Pressable>
@@ -1318,6 +1349,33 @@ export default function Workspace({
               ))}
             {error && <Text style={{ color: "#e36c6c" }}>{error}</Text>}
             {button("Salva scheda", () => void run(save), true)}
+            {editing?.row &&
+              button("Elimina scheda", () =>
+                Alert.alert(
+                  "Elimina scheda",
+                  "Confermi l’eliminazione di questa scheda?",
+                  [
+                    { text: "Annulla", style: "cancel" },
+                    {
+                      text: "Elimina",
+                      style: "destructive",
+                      onPress: () =>
+                        void run(async () => {
+                          await api.change(
+                            "/api/entities/" +
+                              editing.entity +
+                              "/" +
+                              editing.row!.id,
+                            "DELETE",
+                            { version: editing.row!.version },
+                          );
+                          setEditing(null);
+                          await load();
+                        }),
+                    },
+                  ],
+                ),
+              )}
           </ScrollView>
           <Modal
             visible={!!choices && !!editing}
@@ -1517,4 +1575,3 @@ function makeStyles(c: typeof palettes.light) {
     },
   });
 }
-

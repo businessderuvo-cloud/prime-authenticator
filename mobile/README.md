@@ -1,4 +1,4 @@
-# PRIME Mobile 0.2
+# PRIME Mobile 0.2.1
 
 App Android/iOS con schermate React Native. L’app usa le API del gestionale e la demo pubblica esistente; non carica il sito in una WebView.
 
