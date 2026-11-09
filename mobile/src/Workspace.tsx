@@ -75,12 +75,12 @@ const palettes: Record<
     accent: "#f1f1ee",
   },
   vip: {
-    bg: "#080b0d",
-    panel: "#0d1114",
-    line: "#293139",
-    text: "#f0f2f4",
-    muted: "#a6afb9",
-    accent: "#c5d3df",
+    bg: "#0b1d2e",
+    panel: "#10283d",
+    line: "#29445c",
+    text: "#eef4f8",
+    muted: "#a7b9c8",
+    accent: "#b6d1e3",
   },
   elite: {
     bg: "#101112",
@@ -142,6 +142,29 @@ const themeDetails: Record<string, string> = {
   valentine: "Nero e viola · 14 febbraio",
   halloween: "Nero e arancione · 31 ottobre",
   christmas: "Nero e rosso scuro · 21–30 dicembre",
+};
+const monthNames = [
+  "Gennaio",
+  "Febbraio",
+  "Marzo",
+  "Aprile",
+  "Maggio",
+  "Giugno",
+  "Luglio",
+  "Agosto",
+  "Settembre",
+  "Ottobre",
+  "Novembre",
+  "Dicembre",
+];
+const weekNames = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+const dayKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const appointmentDate = (row: Row) => {
+  const value = row.starts_at || row.date || row.start_at || row.datetime;
+  if (!value) return null;
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 const menuGroups = [
   {
@@ -413,6 +436,11 @@ export default function Workspace({
     [connection, setConnection] = useState<Record<string, unknown>>({});
   const [demoServices, setDemoServices] = useState<string[]>([]);
   const [pendingDemoPage, setPendingDemoPage] = useState("");
+  const [calendarCursor, setCalendarCursor] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+  const [calendarSelected, setCalendarSelected] = useState(dayKey(new Date()));
   const [liveServiceReady, setLiveServiceReady] = useState<
     Record<string, boolean>
   >({});
@@ -916,6 +944,30 @@ export default function Workspace({
     });
     return items.some((item) => "id" in item) ? [{ ...group, items }] : [];
   });
+  const calendarRows = data.appointments || [];
+  const calendarYear = calendarCursor.getFullYear();
+  const calendarMonth = calendarCursor.getMonth();
+  const calendarStartOffset =
+    (new Date(calendarYear, calendarMonth, 1).getDay() + 6) % 7;
+  const calendarDays = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const calendarCells: (number | null)[] = [
+    ...Array.from({ length: calendarStartOffset }, () => null),
+    ...Array.from({ length: calendarDays }, (_, index) => index + 1),
+  ];
+  while (calendarCells.length % 7) calendarCells.push(null);
+  const appointmentsByDay = new Map<string, Row[]>();
+  calendarRows.forEach((row) => {
+    const date = appointmentDate(row);
+    if (!date) return;
+    const key = dayKey(date);
+    appointmentsByDay.set(key, [...(appointmentsByDay.get(key) || []), row]);
+  });
+  const selectedAppointments = appointmentsByDay.get(calendarSelected) || [];
+  const shiftCalendar = (offset: number) => {
+    const next = new Date(calendarYear, calendarMonth + offset, 1);
+    setCalendarCursor(next);
+    setCalendarSelected(dayKey(next));
+  };
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <StatusBar style={theme === "light" ? "dark" : "light"} />
@@ -1123,7 +1175,86 @@ export default function Workspace({
             ))}
           </>
         )}
-        {schema[page] && entityList(page)}
+        {page === "appointments" && (
+          <View style={{ gap: 14 }}>
+            <View style={styles.calendarHeader}>
+              {button("‹", () => shiftCalendar(-1))}
+              <Text style={[styles.h2, { flex: 1, textAlign: "center" }]}>
+                {monthNames[calendarMonth]} {calendarYear}
+              </Text>
+              {button("›", () => shiftCalendar(1))}
+            </View>
+            <View style={styles.calendarWeek}>
+              {weekNames.map((name) => (
+                <Text key={name} style={styles.calendarWeekName}>
+                  {name}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarCells.map((day, index) => {
+                const key =
+                  day == null
+                    ? `empty-${index}`
+                    : dayKey(new Date(calendarYear, calendarMonth, day));
+                const events = day == null ? [] : appointmentsByDay.get(key) || [];
+                const selected = key === calendarSelected;
+                return (
+                  <Pressable
+                    key={key}
+                    disabled={day == null}
+                    onPress={() => day != null && setCalendarSelected(key)}
+                    style={[
+                      styles.calendarDay,
+                      selected && { backgroundColor: c.line },
+                    ]}
+                  >
+                    {day != null && (
+                      <Text style={styles.calendarDayNumber}>{day}</Text>
+                    )}
+                    {!!events.length && <View style={[styles.calendarDot, { backgroundColor: c.accent }]} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.h3, { flex: 1 }]}>Appuntamenti del giorno</Text>
+              {button(
+                "+ Nuovo",
+                () => void run(() => openEditor("appointments")),
+                true,
+              )}
+            </View>
+            {selectedAppointments.map((row) => {
+              const starts = appointmentDate(row);
+              const ends = row.ends_at ? new Date(String(row.ends_at)) : null;
+              const title = text(row.title || row.appointment_type || "Appuntamento");
+              const time = starts
+                ? `${starts.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}${ends && !Number.isNaN(ends.getTime()) ? `–${ends.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : ""}`
+                : "Orario da definire";
+              return (
+                <Pressable
+                  key={row.id}
+                  style={styles.calendarEvent}
+                  onPress={() => void run(() => openEditor("appointments", row))}
+                >
+                  <View style={[styles.calendarEventBar, { backgroundColor: c.accent }]} />
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text style={styles.h3}>{title}</Text>
+                    <Text style={styles.muted}>
+                      {time} · {text(row.status || "da confermare")}
+                    </Text>
+                  </View>
+                  <Icon color={c.accent} name="arrow" size={17} />
+                </Pressable>
+              );
+            })}
+            {!selectedAppointments.length && (
+              <Text style={styles.muted}>Nessun appuntamento per questo giorno.</Text>
+            )}
+          </View>
+        )}
+        {page !== "appointments" && schema[page] && entityList(page)}
         {page === "territory" &&
           ["streets", "buildings", "units"].map(entityList)}
         {page === "map" && (
@@ -1441,6 +1572,19 @@ export default function Workspace({
         )}
         {page === "assistant" && (
           <>
+            <View style={styles.assistantHero}>
+              <Image
+                source={require("../assets/vanessa-face-icon.png")}
+                resizeMode="cover"
+                style={styles.assistantAvatar}
+              />
+              <View style={{ flex: 1, gap: 5 }}>
+                <Text style={styles.h2}>Vanessa</Text>
+                <Text style={styles.muted}>
+                  Assistente PRIME · pronta ad aiutarti nel workspace
+                </Text>
+              </View>
+            </View>
             <Text style={styles.muted}>
               {rank >= 2
                 ? "Vanessa · Chat collegata al workspace e ai dati consentiti."
@@ -1698,7 +1842,7 @@ export default function Workspace({
                 ? [
                     "light",
                     ...ranks.slice(1, rank + 1),
-                    ...(demo && rank > 0
+                    ...(demo
                       ? ["valentine", "halloween", "christmas"]
                       : []),
                   ]
@@ -1967,6 +2111,73 @@ function makeStyles(c: typeof palettes.light) {
       gap: 12,
       flexWrap: "wrap",
     },
+    assistantHero: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: 14,
+      backgroundColor: c.panel,
+    },
+    assistantAvatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      borderWidth: 2,
+      borderColor: c.accent,
+    },
+    calendarHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    calendarWeek: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderColor: c.line,
+      paddingBottom: 7,
+    },
+    calendarWeekName: {
+      flex: 1,
+      textAlign: "center",
+      color: c.muted,
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    calendarGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      padding: 4,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: 12,
+      backgroundColor: c.panel,
+    },
+    calendarDay: {
+      width: "14.2857%",
+      minHeight: 56,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      gap: 5,
+    },
+    calendarDayNumber: {
+      color: c.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    calendarDot: { width: 5, height: 5, borderRadius: 3 },
+    calendarEvent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderColor: c.line,
+    },
+    calendarEventBar: { width: 4, height: 38, borderRadius: 2 },
     content: {
       padding: 16,
       gap: 18,
