@@ -14,7 +14,7 @@ App React Native / Expo per Android e iOS. Nessuna WebView e nessuna schermata H
 
 ## Stato reale e attività ancora necessarie
 
-Questa è una prima implementazione sorgente, non una app già pubblicata o un pacchetto installabile. Non copre ancora tutte le funzioni del gestionale web: modifica delle schede, documenti, integrazioni, telefonia, assistenti, notifiche e operazioni avanzate richiedono ulteriori schermate native.
+Questa è una prima versione nativa di prova. Il progetto è pubblicato nella cartella `mobile/` del repository `businessderuvo-cloud/prime-authenticator`; il processo dedicato `PRIME Mobile APK` genera l’APK autonomo e lo pubblica nella release `mobile-android-v0.1.0`. Stato della compilazione e disponibilità del file sono verificabili su GitHub. Non copre ancora tutte le funzioni del gestionale web: modifica delle schede, documenti, integrazioni, telefonia, assistenti, notifiche e operazioni avanzate richiedono ulteriori schermate native.
 
 Gli account sviluppatore Apple e Google Play sono ancora da creare, come confermato dall’utente. Non esistono ancora prodotti store configurati o acquisti reali verificati. Il gestionale attuale non espone gli endpoint `/api/mobile/store/*`: **il completamento e la pubblicazione del backend di acquisto sono ancora necessari**. Il client mostra chiaramente l’indisponibilità e non addebita denaro in questa situazione.
 
@@ -71,6 +71,7 @@ Non inserire credenziali Live, documenti o chiavi dei provider nel progetto.
 
 Il round trip pubblico ha verificato creazione della sessione, lettura di immobili/contatti/appuntamenti, passaggio Standard → Pro → VIP → Elite → Secret → Standard e logout. I controlli automatici includono anche il blocco dei pagamenti in demo, il rifiuto del pagamento senza autorizzazione del server o con un’altra agenzia e il mancato riconoscimento di transazioni non verificate. I bundle JavaScript nativi sono un controllo di compilazione, non APK/IPA e non una prova su telefono.
 
-La generazione del progetto Android è stata eseguita; iOS richiede la generazione nativa su macOS/EAS. Nell’ambiente di lavoro non sono presenti Android SDK/JDK o Xcode: non è stata completata la compilazione binaria. L’analisi delle dipendenze segnala avvisi moderati nella catena degli strumenti Expo e di controllo del codice; la proposta automatica di correzione comporta cambi di versione e non è stata applicata senza verificarne la compatibilità.
+La distribuzione APK è gestita da un workflow GitHub separato da Authenticator, con verifica della firma, dell’identificatore `it.primegestionale.mobile` e del bundle incluso nell’APK. Il pacchetto di prova è firmato con la chiave di sviluppo del progetto; la pubblicazione Google Play richiede una firma di produzione. iOS richiede la compilazione nativa su macOS/EAS e non è ancora disponibile un IPA. La prova su telefono fisico resta da eseguire. L’analisi delle dipendenze segnala avvisi moderati nella catena degli strumenti Expo e di controllo del codice; la proposta automatica di correzione comporta cambi di versione e non è stata applicata senza verificarne la compatibilità.
 
 Riferimenti: [Expo](https://docs.expo.dev/get-started/create-a-project/), [acquisti nativi](https://hyochan.github.io/react-native-iap/docs/installation/), [verifica server Google](https://developer.android.com/google/play/billing/security), [regole App Store](https://developer.apple.com/app-store/review/guidelines/).
+
