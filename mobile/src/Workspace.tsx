@@ -115,12 +115,12 @@ const palettes: Record<
     accent: "#f5a04f",
   },
   christmas: {
-    bg: "#12090b",
-    panel: "#241014",
-    line: "#4b252b",
-    text: "#fff1f3",
-    muted: "#c9a4ab",
-    accent: "#e88e9c",
+    bg: "#080606",
+    panel: "#1b0808",
+    line: "#8a2020",
+    text: "#fff0ed",
+    muted: "#ddbab6",
+    accent: "#ff5757",
   },
 };
 const themeNames: Record<string, string> = {
