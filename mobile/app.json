@@ -2,9 +2,11 @@
   "expo": {
     "name": "PRIME",
     "slug": "prime-mobile",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "orientation": "default",
     "scheme": "prime",
+    "icon": "./assets/prime-icon.png",
+    "backgroundColor": "#050505",
     "userInterfaceStyle": "dark",
     "platforms": ["ios", "android"],
     "ios": {
@@ -18,12 +20,25 @@
       "package": "it.primegestionale.mobile",
       "permissions": [],
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
-      "versionCode": 3
+      "versionCode": 4
     },
     "plugins": [
       "expo-secure-store",
       "expo-iap",
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#050505",
+          "image": "./assets/prime-splash.png",
+          "imageWidth": 190,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#050505",
+            "image": "./assets/prime-splash.png"
+          }
+        }
+      ],
       "./plugins/withPrimeIcon.js"
     ]
   }

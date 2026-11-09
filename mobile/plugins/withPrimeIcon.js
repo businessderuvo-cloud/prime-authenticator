@@ -4,7 +4,7 @@ const {
 } = require("expo/config-plugins");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-// Package the supplied bitmap unchanged. Android centers it without cropping the houses.
+// Use the supplied house mark, redrawn at high resolution with a transparent field.
 module.exports = function withPrimeIcon(config) {
   config = withAndroidManifest(config, (c) => {
     const app = c.modResults.manifest.application[0].$;
@@ -29,7 +29,7 @@ module.exports = function withPrimeIcon(config) {
         path.join(res, "drawable/prime_launcher.xml"),
         `<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-  <item><shape android:shape="rectangle"><size android:width="108dp" android:height="108dp"/><solid android:color="#080909"/></shape></item>
+  <item><shape android:shape="rectangle"><size android:width="108dp" android:height="108dp"/><solid android:color="#050505"/></shape></item>
   <item android:width="64dp" android:height="38dp" android:gravity="center"><bitmap android:src="@drawable/prime_original_logo" android:gravity="fill" android:filter="true"/></item>
 </layer-list>`,
       );

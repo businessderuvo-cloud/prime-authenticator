@@ -65,8 +65,8 @@ jobs:
           "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.mobile'"
           unzip -l "$apk" | grep -F 'assets/index.android.bundle'
           mkdir -p release
-          cp "$apk" release/PRIME-Mobile-Android-v0.2.1.apk
-          (cd release && sha256sum PRIME-Mobile-Android-v0.2.1.apk > SHA256SUMS.txt)
+          cp "$apk" release/PRIME-Mobile-Android-v0.2.2.apk
+          (cd release && sha256sum PRIME-Mobile-Android-v0.2.2.apk > SHA256SUMS.txt)
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -85,7 +85,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PRIME-Mobile-Android-v0.2.1
+          name: PRIME-Mobile-Android-v0.2.2
           path: mobile/release/*
           if-no-files-found: error
           retention-days: 30
@@ -94,18 +94,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=mobile-android-v0.2.1
+          tag=mobile-android-v0.2.2
           cat > release/notes.md <<'NOTES'
-          Prima versione di prova di PRIME Mobile per Android 64 bit (arm64).
+          PRIME Mobile 0.2.2 — aggiornamento nativo per Android 64 bit (arm64).
 
-          App nativa React Native: nessuna WebView del gestionale, nessun Expo Go necessario. Include icona di avvio con logo originale, menu completo, icone del sito, temi e selettore piani, schede modificabili, territorio, mappa nativa, PRIME Connect e dati Wallester dimostrativi. La raccolta dei documenti KYB apre il servizio esterno.
+          Logo di avvio ridisegnato ad alta risoluzione e integrato con lo sfondo; loghi provider inclusi nell’app; menu diviso in categorie come il sito; palette VIP corretta; anteprime stagionali disponibili nella demo; sezioni dedicate nascoste fino all’attivazione del servizio; pagamenti Stripe dimostrativi, senza collegamento o richieste reali.
 
-          Gli acquisti non sono ancora attivi: sono necessari account store, prodotti e verifica server dei pagamenti. Non comprende ancora tutte le funzioni del gestionale. APK di prova firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play.
+          PRIME Mobile è un’app nativa React Native, senza WebView. L’APK è firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play. Gli acquisti reali attendono account store, prodotti e verifica server dei pagamenti.
 
           L’app Authenticator già presente nel repository rimane separata e le sue release non vengono modificate.
           NOTES
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.1.apk release/SHA256SUMS.txt release/*.png --clobber
+            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.2.apk release/SHA256SUMS.txt release/*.png --clobber
           else
-            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.1.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.1 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
+            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.2.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.2 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
           fi

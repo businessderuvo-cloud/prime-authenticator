@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 34" role="img" aria-label="PRIME">
+  <g fill="none" stroke="#c7a979" stroke-width="3.2" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M3 14 19 2 35 15 51 2 67 14M5 14v19m59-19v19"/>
+  </g>
+  <g fill="#c7a979">
+    <path d="M15 19h3v3h-3zm5 0h3v3h-3zm-5 5h3v3h-3zm5 0h3v3h-3zm25-5h3v3h-3zm5 0h3v3h-3zm-5 5h3v3h-3zm5 0h3v3h-3z"/>
+  </g>
+</svg>

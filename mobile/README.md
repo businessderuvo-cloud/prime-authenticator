@@ -1,4 +1,4 @@
-# PRIME Mobile 0.2.1
+# PRIME Mobile 0.2.2
 
 App Android/iOS con schermate React Native. L’app usa le API del gestionale e la demo pubblica esistente; non carica il sito in una WebView.
 
@@ -6,13 +6,13 @@ App Android/iOS con schermate React Native. L’app usa le API del gestionale e 
 
 - Menu del gestionale adattato a telefono e tablet; barra rapida per Panoramica, WPS, Agenda e Connect.
 - Percorsi vettoriali delle icone e logo tipografico importati dal sito PRIME.
-- Icona di avvio Android con il bitmap originale fornito dall’utente, centrato e senza ritagliare le case.
+- Logo di avvio ridisegnato in alta risoluzione dal simbolo fornito: icona iOS/Android e schermata iniziale usano uno sfondo coordinato, senza riquadro visibile o bordi sgranati.
 - Selettore Demo/Live e dei cinque piani nella demo.
-- Temi Bianco, Pro, Blu VIP, Elite, Secret e anteprime stagionali, salvati con le preferenze della sessione server. I temi disponibili dipendono dal piano.
+- Temi allineati alla presentazione PRIME: Bianco, Pro grigio, Blu VIP, Elite, Secret e le tre anteprime stagionali della demo, salvati con le preferenze della sessione server.
 - Panoramica con contatori, prossime attività, territorio, appuntamenti, scadenze e qualità delle schede.
 - Diciannove tipi di schede con campi originali, creazione/modifica e riferimenti alle altre schede, inclusi gli agenti. Il server conserva autorizzazioni e controllo delle versioni.
 - Ricerca generale via API; territorio e mappa nativa su cartografia OpenStreetMap.
-- PRIME Connect e sezioni dedicate ai servizi; visualizzazione dello stato reale di configurazione e collegamento. OAuth dei servizi supportati si apre nell’autorizzazione esterna del provider.
+- PRIME Connect con loghi locali ad alta risoluzione e categorie del sito. Le sezioni provider restano nascoste finché non si attivano i dati demo o non risulta pronto un collegamento Live. Stripe demo mostra solo importi e movimenti sintetici, senza chiamate al provider. OAuth dei servizi supportati si apre nell’autorizzazione esterna.
 - Conti e movimenti Wallester dimostrativi provenienti dalla stessa API della demo del sito.
 - Portali immobiliari con preparazione delle bozze, registro attività, account e chat testuale collegati agli endpoint esistenti.
 
@@ -24,7 +24,7 @@ Login, 2FA e KYB usano gli endpoint esistenti; i documenti KYB e gli accessi OAu
 
 Gli acquisti dei piani restano disabilitati: l’utente deve ancora creare gli account sviluppatore Apple/Google. Servono prodotti store e endpoint server `/api/mobile/store/config`, `/intent`, `/verify`, con verifica diretta Apple/Google, controllo KYB e titolare, associazione univoca all’agenzia e gestione di rinnovi/rimborsi/revoche. Il client non abilita mai un piano a partire dal solo esito locale del pagamento. Secret resta su preventivo.
 
-L’APK è una build di prova firmata con la chiave di sviluppo, per Android 7+ a 64 bit. Le release di Authenticator rimangono separate. iOS ha il sorgente nativo ma non dispone ancora di un IPA firmato. Per una futura pubblicazione store occorrono firma definitiva e logo ad alta risoluzione: quello fornito misura 73×43 pixel.
+L’APK è una build di prova firmata con la chiave di sviluppo, per Android 7+ a 64 bit. Le release di Authenticator rimangono separate. iOS ha il sorgente nativo ma non dispone ancora di un IPA firmato. Per la pubblicazione sugli store occorrono gli account sviluppatore e una firma definitiva. Icona e schermata di avvio usano una versione vettoriale ad alta risoluzione del simbolo fornito.
 
 ## Verifiche e build
 

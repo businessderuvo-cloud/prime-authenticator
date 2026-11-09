@@ -16,12 +16,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import Svg, { Path, SvgXml, SvgUri } from "react-native-svg";
+import Svg, { Path, SvgXml } from "react-native-svg";
 import { router, useLocalSearchParams } from "expo-router";
 import { Me, PrimeApi, Row, Mode } from "./api";
 import icons from "./site-icons.json";
 import definitions from "./site-schema.json";
 import brand from "./brand.json";
+import providerLogos from "./provider-logos.json";
 import NativeMap from "./NativeMap";
 import { metricValue } from "./site-metrics";
 type Field = {
@@ -66,6 +67,22 @@ const palettes: Record<
     accent: "#292d2b",
   },
   pro: {
+    bg: "#505050",
+    panel: "#606060",
+    line: "#888888",
+    text: "#f5f5f5",
+    muted: "#e0e0e0",
+    accent: "#f1f1ee",
+  },
+  vip: {
+    bg: "#080b0d",
+    panel: "#0d1114",
+    line: "#293139",
+    text: "#f0f2f4",
+    muted: "#a6afb9",
+    accent: "#c5d3df",
+  },
+  elite: {
     bg: "#101112",
     panel: "#171819",
     line: "#303233",
@@ -73,29 +90,13 @@ const palettes: Record<
     muted: "#a3a5a5",
     accent: "#e2e2dc",
   },
-  vip: {
-    bg: "#081426",
-    panel: "#10213b",
-    line: "#273c5a",
-    text: "#f0f5ff",
-    muted: "#a8b8ce",
-    accent: "#86baff",
-  },
-  elite: {
-    bg: "#08090b",
-    panel: "#131518",
-    line: "#30343b",
-    text: "#f5f6f7",
-    muted: "#a9b0b8",
-    accent: "#d4dce3",
-  },
   secret: {
-    bg: "#080909",
-    panel: "#11120f",
-    line: "#2c2b25",
-    text: "#f3f1eb",
-    muted: "#aaa99e",
-    accent: "#c8ad7c",
+    bg: "#050505",
+    panel: "#0a0a0a",
+    line: "#292929",
+    text: "#f0f0f0",
+    muted: "#9b9b9b",
+    accent: "#c7a979",
   },
   valentine: {
     bg: "#110b15",
@@ -132,45 +133,85 @@ const themeNames: Record<string, string> = {
   halloween: "Halloween",
   christmas: "Natale",
 };
-const sections = [
-  ["dashboard", "Panoramica"],
-  ["territory", "Vie e territorio"],
-  ["map", "Mappa immobiliare"],
-  ["agents", "Agenti"],
-  ["contacts", "CRM · Persone"],
-  ["contact_methods", "Recapiti CRM"],
-  ["contact_interactions", "Interazioni CRM"],
-  ["unit_contacts", "Relazioni e ruoli"],
-  ["properties", "Immobili in gestione"],
-  ["activities", "WPS"],
-  ["appointments", "Agenda appuntamenti"],
-  ["buyer_profiles", "Esigenze acquirenti"],
-  ["viewing_feedback", "Feedback visite"],
-  ["deals", "Trattative"],
-  ["offers", "Proposte e offerte"],
-  ["valuations", "Valutazioni"],
-  ["leases", "Locazioni"],
-  ["commissions", "Provvigioni"],
-  ["portals", "Portali immobiliari"],
-  ["documents", "Documenti"],
-  ["signature_requests", "Firme elettroniche"],
-  ["connect", "PRIME Connect"],
-  ["calendly", "Calendly"],
-  ["voip", "Telefonia VoIP"],
-  ["storage_drive", "Google Drive"],
-  ["storage_onedrive", "OneDrive"],
-  ["storage_dropbox", "Dropbox"],
-  ["stripe", "Stripe · Pagamenti"],
-  ["contactout", "ContactOut · Ricerche"],
-  ["datagma", "Datagma · Ricerche"],
-  ["wallester", "Wallester · Finanze"],
-  ["mail", "Email"],
-  ["assistant", "Vanessa"],
-  ["upgrade", "Piano e upgrade"],
-  ["security", "Sicurezza account"],
-  ["audit", "Registro attività"],
-  ["roadmap", "Stato sviluppo"],
+const themeDetails: Record<string, string> = {
+  light: "Tema chiaro",
+  pro: "Grigio medio",
+  vip: "Blu PRIME",
+  elite: "Nero e argento",
+  secret: "Nero e oro",
+  valentine: "Nero e viola · 14 febbraio",
+  halloween: "Nero e arancione · 31 ottobre",
+  christmas: "Nero e rosso scuro · 21–30 dicembre",
+};
+const menuGroups = [
+  {
+    title: "WORKSPACE",
+    items: [
+      { id: "dashboard", label: "Panoramica" },
+      { id: "territory", label: "Vie e territorio" },
+      { id: "map", label: "Mappa immobiliare" },
+      { id: "agents", label: "Agenti" },
+      { id: "contacts", label: "CRM · Persone" },
+      { id: "contact_methods", label: "Recapiti CRM" },
+      { id: "contact_interactions", label: "Interazioni CRM" },
+      { id: "unit_contacts", label: "Relazioni e ruoli" },
+      { id: "properties", label: "Immobili in gestione" },
+      { id: "activities", label: "WPS" },
+      { id: "appointments", label: "Agenda appuntamenti" },
+    ],
+  },
+  {
+    title: "COMMERCIALE",
+    items: [
+      { id: "buyer_profiles", label: "Esigenze acquirenti" },
+      { id: "viewing_feedback", label: "Feedback visite" },
+      { id: "deals", label: "Trattative" },
+      { id: "offers", label: "Proposte e offerte" },
+      { id: "valuations", label: "Valutazioni" },
+      { id: "leases", label: "Locazioni" },
+      { id: "commissions", label: "Provvigioni" },
+      { id: "portals", label: "Portali immobiliari" },
+      { id: "documents", label: "Documenti" },
+      { id: "signature_requests", label: "Firme elettroniche" },
+    ],
+  },
+  {
+    title: "CONNESSIONI",
+    items: [
+      { id: "connect", label: "PRIME Connect" },
+      { section: "PAGAMENTI" },
+      { id: "stripe", label: "Stripe" },
+      { id: "wallester", label: "Wallester" },
+      { section: "INDAGINI" },
+      { id: "datagma", label: "Datagma" },
+      { id: "contactout", label: "ContactOut" },
+      { section: "ARCHIVIAZIONE" },
+      { id: "storage_drive", label: "Google Drive" },
+      { id: "storage_onedrive", label: "OneDrive" },
+      { id: "storage_dropbox", label: "Dropbox" },
+      { section: "CALENDARI" },
+      { id: "calendly", label: "Calendly" },
+      { section: "COMUNICAZIONI" },
+      { id: "voip", label: "Telefonia VoIP" },
+    ],
+  },
+  {
+    title: "ACCOUNT",
+    items: [
+      { id: "mail", label: "Email" },
+      { id: "assistant", label: "Vanessa" },
+      { id: "upgrade", label: "Piano e upgrade" },
+      { id: "security", label: "Sicurezza account" },
+      { id: "audit", label: "Registro attività" },
+      { id: "roadmap", label: "Stato sviluppo" },
+    ],
+  },
 ];
+const sections = menuGroups.flatMap((group) =>
+  group.items.flatMap((item) =>
+    "id" in item ? [[item.id, item.label] as [string, string]] : [],
+  ),
+);
 const providerPages = [
   "calendly",
   "voip",
@@ -182,21 +223,127 @@ const providerPages = [
   "datagma",
 ];
 const providers = [
-  ["google", "Google Calendar", "/brands/providers/googlecalendar.svg"],
-  ["apple", "iCloud", ""],
-  ["calendly", "Calendly", "/brands/providers/calendly.svg"],
-  ["whatsapp", "WhatsApp Business", "/brands/providers/whatsapp.svg"],
-  ["drive", "Google Drive", "/brands/providers/googledrive-nav-color.svg"],
-  ["onedrive", "OneDrive", "/brands/providers/microsoftonedrive.svg"],
-  ["dropbox", "Dropbox", "/brands/providers/dropbox.svg"],
-  ["gmail", "Gmail", ""],
-  ["outlook", "Outlook", ""],
-  ["zoho", "Zoho Mail", ""],
-  ["wallester", "Wallester", "/assets/wallester-nav-symbol.svg"],
-  ["stripe", "Stripe", "/assets/stripe-connect-color.svg"],
-  ["voip", "Telefonia VoIP", "/assets/voipstudio-connect-color.svg"],
-  ["contactout", "ContactOut", "/brands/providers/contactout.png"],
-  ["datagma", "Datagma", "/brands/providers/datagma-official.svg"],
+  ["google", "Google Calendar", "google"],
+  ["apple", "iCloud", "apple"],
+  ["calendly", "Calendly", "calendly"],
+  ["whatsapp", "WhatsApp Business", "whatsapp"],
+  ["drive", "Google Drive", "drive"],
+  ["onedrive", "OneDrive", "onedrive"],
+  ["dropbox", "Dropbox", "dropbox"],
+  ["gmail", "Gmail", "gmail"],
+  ["outlook", "Outlook", "outlook"],
+  ["zoho", "Zoho Mail", "zoho"],
+  ["wallester", "Wallester", "wallester"],
+  ["stripe", "Stripe", "stripe"],
+  ["voip", "Telefonia VoIP", "voipstudio"],
+  ["contactout", "ContactOut", "contactout"],
+  ["datagma", "Datagma", "datagma"],
+];
+const providerCategories: [string, string[]][] = [
+  ["PAGAMENTI", ["stripe", "wallester"]],
+  ["INDAGINI", ["datagma", "contactout"]],
+  ["ARCHIVIAZIONE", ["drive", "onedrive", "dropbox"]],
+  ["CALENDARI", ["google", "apple", "calendly"]],
+  ["COMUNICAZIONI", ["whatsapp", "gmail", "outlook", "zoho", "voip"]],
+];
+const providerLogoSizes: Record<string, [number, number]> = {
+  google: [30, 30],
+  apple: [28, 28],
+  calendly: [30, 30],
+  whatsapp: [30, 30],
+  drive: [30, 30],
+  onedrive: [30, 30],
+  dropbox: [30, 30],
+  gmail: [30, 30],
+  outlook: [32, 30],
+  zoho: [38, 30],
+  wallester: [42, 30],
+  stripe: [74, 30],
+  voip: [124, 28],
+  contactout: [38, 38],
+  datagma: [124, 28],
+};
+const providerPageService: Record<string, string> = {
+  stripe: "stripe",
+  wallester: "wallester",
+  datagma: "datagma",
+  contactout: "contactout",
+  calendly: "calendly",
+  voip: "voip",
+  storage_drive: "drive",
+  storage_onedrive: "onedrive",
+  storage_dropbox: "dropbox",
+};
+const providerServicePage = Object.fromEntries(
+  Object.entries(providerPageService).map(([page, service]) => [service, page]),
+) as Record<string, string>;
+const demoProviderSamples: Record<
+  string,
+  { title: string; rows: string[] }
+> = {
+  datagma: {
+    title: "Esempio di ricerca contatti",
+    rows: [
+      "Luca Ferri · amministratore · luca.ferri@example.test",
+      "Sara Moretti · consulente · sara.moretti@example.test",
+    ],
+  },
+  contactout: {
+    title: "Esempio di arricchimento contatto",
+    rows: [
+      "Giulia Riva · responsabile commerciale · giulia.riva@example.test",
+      "Recapito e profilo professionale di esempio",
+    ],
+  },
+  calendly: {
+    title: "Prossimi appuntamenti di esempio",
+    rows: [
+      "10 nov · 10:30 · Visita immobile · Cliente demo",
+      "11 nov · 15:00 · Valutazione · Proprietario demo",
+    ],
+  },
+  voip: {
+    title: "Registro chiamate di esempio",
+    rows: [
+      "Oggi · 09:42 · Chiamata in entrata · 04:18",
+      "Ieri · 16:20 · Chiamata in uscita · 02:56",
+    ],
+  },
+  drive: {
+    title: "File di esempio",
+    rows: ["Incarico vendita.pdf · Demo", "Scheda immobile.docx · Demo"],
+  },
+  onedrive: {
+    title: "File di esempio",
+    rows: ["Proposta di acquisto.pdf · Demo", "Visura catastale.pdf · Demo"],
+  },
+  dropbox: {
+    title: "File di esempio",
+    rows: ["Planimetria immobile.pdf · Demo", "Documenti cliente.zip · Demo"],
+  },
+};
+const stripeDemoPayments = [
+  {
+    date: "09 nov 2026",
+    customer: "Agenzia Aurora · Demo",
+    reason: "Canone gestionale",
+    amount: 149,
+    status: "Riuscito",
+  },
+  {
+    date: "08 nov 2026",
+    customer: "Cliente Casa Verde · Demo",
+    reason: "Consulenza immobiliare",
+    amount: 390,
+    status: "Riuscito",
+  },
+  {
+    date: "07 nov 2026",
+    customer: "Studio Centro · Demo",
+    reason: "Servizio di valutazione",
+    amount: 220,
+    status: "In attesa",
+  },
 ];
 const referenceLabel = (rows: Row[], id: unknown) => {
   const row = rows.find((r) => r.id === id);
@@ -264,6 +411,13 @@ export default function Workspace({
   const [data, setData] = useState<Record<string, Row[]>>({}),
     [dashboard, setDashboard] = useState<Record<string, unknown>>({}),
     [connection, setConnection] = useState<Record<string, unknown>>({});
+  const [demoServices, setDemoServices] = useState<string[]>([]);
+  const [liveServiceReady, setLiveServiceReady] = useState<
+    Record<string, boolean>
+  >({});
+  const [connectionLoadedMode, setConnectionLoadedMode] =
+    useState<Mode | null>(null);
+  const connectionLoading = connectionLoadedMode !== mode;
   const [finance, setFinance] = useState<Row[]>([]),
     [movements, setMovements] = useState<Row[]>([]),
     [editing, setEditing] = useState<{
@@ -366,7 +520,10 @@ export default function Workspace({
       }));
     } else if (page === "connect" || providerPages.includes(page))
       setConnection(await api.get("/api/connect"));
-    else if (page === "wallester") {
+    else if (
+      page === "wallester" &&
+      (mode === "live" || demoServices.includes("wallester"))
+    ) {
       const state = await api.get<{ accounts: Row[] }>(
         "/api/connect/wallester",
       );
@@ -548,16 +705,203 @@ export default function Workspace({
     ...((connection.providers as {
       provider: string;
       configured?: boolean;
+      connected?: boolean;
+      status?: string;
     }[]) || []),
     ...((connection.storageProviders as {
       provider: string;
       configured?: boolean;
+      connected?: boolean;
+      status?: string;
     }[]) || []),
     ...((connection.mailProviders as {
       provider: string;
       configured?: boolean;
+      connected?: boolean;
+      status?: string;
     }[]) || []),
   ];
+  const canUseDemoProvider = (id: string) => {
+    if (id === "stripe") return rank >= 3;
+    if (id === "wallester") return rank >= 1;
+    if (["drive", "onedrive", "dropbox"].includes(id)) return rank >= 4;
+    if (id === "voip") return rank >= 2;
+    return rank >= 1;
+  };
+  const pageIsAvailable = (id: string) => {
+    const service = providerPageService[id];
+    if (!service) {
+      if (["agents", "upgrade"].includes(id) && me.role !== "owner")
+        return false;
+      if (id === "audit" && !["owner", "manager"].includes(me.role))
+        return false;
+      if (id === "security" && demo) return false;
+      return true;
+    }
+    if (demo)
+      return canUseDemoProvider(service) && demoServices.includes(service);
+    return connectionLoadedMode === mode && liveServiceReady[service] === true;
+  };
+  const liveStripeEnabled =
+    (me as Me & { stripe_enabled?: boolean }).stripe_enabled === true &&
+    ["owner", "manager"].includes(me.role);
+  const pageAvailability = useEffectEvent((id: string) => pageIsAvailable(id));
+  const toggleDemoService = (id: string, enabled: boolean) => {
+    setDemoServices((current) =>
+      enabled
+        ? current.includes(id)
+          ? current
+          : [...current, id]
+        : current.filter((service) => service !== id),
+    );
+    const target = providerServicePage[id];
+    if (enabled && target) nav(target);
+    else if (!enabled && providerPageService[page] === id) nav("connect");
+  };
+  useEffect(() => {
+    let active = true;
+    const loadConnectionStatus = async () => {
+      const base = await api
+        .get<Record<string, unknown>>("/api/connect")
+        .catch(() => ({} as Record<string, unknown>));
+      if (!active) return;
+      setConnection(base);
+      const rows = [
+        ...((base.providers as {
+          provider?: string;
+          configured?: boolean;
+          connected?: boolean;
+          status?: string;
+        }[]) || []),
+        ...((base.storageProviders as {
+          provider?: string;
+          configured?: boolean;
+          connected?: boolean;
+          status?: string;
+        }[]) || []),
+        ...((base.storageConnections as {
+          provider?: string;
+          configured?: boolean;
+          connected?: boolean;
+          status?: string;
+        }[]) || []),
+      ];
+      const connections = (base.connections as {
+        provider?: string;
+        status?: string;
+      }[]) || [];
+      const isReady = (id: string) =>
+        rows.some(
+          (item) =>
+            item.provider === id &&
+            (item.configured === true ||
+              item.connected === true ||
+              item.status === "connected"),
+        );
+      const next: Record<string, boolean> = {
+        datagma:
+          isReady("datagma") ||
+          (base.datagma as { configured?: boolean } | undefined)?.configured ===
+            true,
+        contactout: isReady("contactout"),
+        calendly: isReady("calendly") ||
+          connections.some(
+            (item) =>
+              item.provider === "calendly" && item.status === "connected",
+          ),
+        drive: isReady("drive"),
+        onedrive: isReady("onedrive"),
+        dropbox: isReady("dropbox"),
+        stripe: isReady("stripe"),
+        wallester: isReady("wallester"),
+        voip: isReady("voip"),
+      };
+      if (mode === "live") {
+        const checks: [string, string][] = [
+          ["contactout", "/api/contactout/settings"],
+          ["voip", "/api/connect/telephony"],
+          ["wallester", "/api/connect/wallester"],
+          ...(liveStripeEnabled
+            ? [
+                ["stripe_test", "/api/stripe/status?mode=test"] as [
+                  string,
+                  string,
+                ],
+                ["stripe_live", "/api/stripe/status?mode=live"] as [
+                  string,
+                  string,
+                ],
+              ]
+            : []),
+        ];
+        const results = await Promise.allSettled(
+          checks.map(([, path]) =>
+            api.get<Record<string, unknown>>(path),
+          ),
+        );
+        results.forEach((result, index) => {
+          if (result.status !== "fulfilled") return;
+          const [id] = checks[index];
+          const value = result.value;
+          if (id === "contactout")
+            next.contactout =
+              value.configured === true && value.mode === "live";
+          if (id === "wallester")
+            next.wallester =
+              value.configured === true || value.connected === true;
+          if (id === "voip")
+            next.voip =
+              (value.providers as { configured?: boolean }[] | undefined)?.some(
+                (provider) => provider.configured === true,
+              ) === true;
+          if (id === "stripe_test" || id === "stripe_live")
+            next.stripe = next.stripe || value.configured === true;
+        });
+      }
+      if (!active) return;
+      setLiveServiceReady(next);
+      setConnectionLoadedMode(mode);
+    };
+    void loadConnectionStatus();
+    return () => {
+      active = false;
+    };
+  }, [api, mode, me.tenant_id, me.role, liveStripeEnabled]);
+  useEffect(() => {
+    if (
+      !connectionLoading &&
+      providerPageService[page] &&
+      !pageAvailability(page)
+    )
+      router.setParams({ page: "connect" });
+  }, [
+    page,
+    connectionLoading,
+    demoServices,
+    liveServiceReady,
+    rank,
+    mode,
+    demo,
+    me.role,
+  ]);
+  const visibleMenuGroups = menuGroups.flatMap((group) => {
+    const items = group.items.filter((item, index) => {
+      if ("id" in item && typeof item.id === "string")
+        return pageIsAvailable(item.id);
+      for (let next = index + 1; next < group.items.length; next += 1) {
+        const candidate = group.items[next];
+        if ("section" in candidate) return false;
+        if (
+          "id" in candidate &&
+          typeof candidate.id === "string" &&
+          pageIsAvailable(candidate.id)
+        )
+          return true;
+      }
+      return false;
+    });
+    return items.some((item) => "id" in item) ? [{ ...group, items }] : [];
+  });
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <StatusBar style={theme === "light" ? "dark" : "light"} />
@@ -811,107 +1155,223 @@ export default function Workspace({
               Collega i tuoi strumenti e prova i dati dimostrativi. Ogni
               servizio conserva le regole e i permessi del tuo piano.
             </Text>
-            {providers
-              .filter(
+            {providerCategories.map(([category, ids]) => {
+              const group = providers.filter(
                 ([id]) =>
-                  page === "connect" || id === page.replace("storage_", ""),
-              )
-              .map(([id, name, logo]) => {
-                const p = connectionRows.find((p) => p.provider === id);
-                return (
-                  <View key={id} style={styles.panel}>
-                    <View style={styles.row}>
-                      {id === "apple" ? (
-                        <SvgXml
-                          xml={brand.apple.replace("#000000", c.text)}
-                          width={28}
-                          height={28}
-                        />
-                      ) : logo.endsWith(".svg") ? (
-                        <SvgUri
-                          uri={"https://www.primegestionale.it" + logo}
-                          width={35}
-                          height={26}
-                        />
-                      ) : logo ? (
-                        <Image
-                          source={{
-                            uri: "https://www.primegestionale.it" + logo,
-                          }}
-                          style={{ width: 30, height: 30 }}
-                        />
-                      ) : (
-                        <Icon color={c.accent} name={id} />
-                      )}
-                      <Text style={styles.h2}>{name}</Text>
-                    </View>
-                    <Text style={styles.muted}>
-                      {id === "wallester" && demo
-                        ? "Conti, movimenti e saldi fittizi. Nessun conto reale viene collegato."
-                        : p?.configured
-                          ? "Servizio configurato sulla piattaforma. Autorizza il tuo account per collegarlo."
-                          : "Configurazione o disponibilità soggetta al piano e al server PRIME."}
-                    </Text>
-                    <View style={styles.row}>
-                      {button(
-                        id === "wallester" && demo
-                          ? "Attiva dati fittizi"
-                          : "Verifica stato",
-                        () =>
-                          void run(async () => {
-                            if (id === "wallester") {
-                              nav("wallester");
-                              return;
-                            }
-                            const status =
-                              await api.get<Record<string, unknown>>(
-                                "/api/connect",
-                              );
-                            const connections = (
-                              (status.connections as {
-                                provider: string;
-                                status: string;
-                              }[]) || []
-                            ).filter((x) => x.provider === id);
-                            setProbe({
-                              title: name,
-                              text: connections.length
-                                ? connections.map((x) => x.status).join("\n")
-                                : p?.configured
-                                  ? "Configurazione disponibile. Nessun account personale collegato. La configurazione non costituisce un test riuscito del servizio."
-                                  : "Non collegato: configura il servizio prima di eseguire un test reale.",
-                            });
-                          }),
-                      )}
-                      {p?.configured &&
-                        [
-                          "calendly",
-                          "drive",
-                          "dropbox",
-                          "onedrive",
-                          "google",
-                        ].includes(id) &&
-                        button(
-                          "Collega account",
-                          () =>
-                            void run(async () => {
-                              const result = await api.post<{ url?: string }>(
-                                "/api/connect/authorize/" + id,
-                              );
-                              if (
-                                !result.url ||
-                                !result.url.startsWith("https://")
+                  ids.includes(id) &&
+                  (page === "connect" ||
+                    id === page.replace("storage_", "")),
+              );
+              if (!group.length) return null;
+              return (
+                <View key={category} style={{ gap: 10 }}>
+                  <Text style={styles.eyebrow}>{category}</Text>
+                  {group.map(([id, name, logo]) => {
+                    const servicePage = providerServicePage[id];
+                    const p = connectionRows.find(
+                      (item) => item.provider === id,
+                    );
+                    const size = providerLogoSizes[id] || [32, 30];
+                    const isActiveDemo =
+                      demo && demoServices.includes(id) &&
+                      canUseDemoProvider(id);
+                    const isReadyLive =
+                      !demo && liveServiceReady[id] === true;
+                    const xml = (
+                      providerLogos as Record<string, string>
+                    )[logo];
+                    const adjustedXml =
+                      id === "apple"
+                        ? xml.replaceAll("#000000", c.text)
+                        : id === "datagma" && theme === "light"
+                          ? xml.replace('fill="#fff">Datagma', 'fill="#172b3b">Datagma')
+                          : xml;
+                    return (
+                      <View key={id} style={styles.panel}>
+                        <View style={styles.row}>
+                          {id === "contactout" ? (
+                            <Image
+                              source={require("../assets/providers/contactout.png")}
+                              resizeMode="contain"
+                              style={{ width: size[0], height: size[1] }}
+                            />
+                          ) : id === "voip" ? (
+                            <Image
+                              source={
+                                theme === "light"
+                                  ? require("../assets/providers/voipstudio-light.png")
+                                  : require("../assets/providers/voipstudio-dark.png")
+                              }
+                              resizeMode="contain"
+                              style={{ width: size[0], height: size[1] }}
+                            />
+                          ) : (
+                            <SvgXml
+                              xml={adjustedXml}
+                              width={size[0]}
+                              height={size[1]}
+                            />
+                          )}
+                          {!["datagma", "voip"].includes(id) && (
+                            <Text style={styles.h2}>{name}</Text>
+                          )}
+                          {servicePage && (isActiveDemo || isReadyLive) && (
+                            <Text style={[styles.tiny, { color: c.accent }]}>
+                              {isActiveDemo ? "DEMO ATTIVA" : "COLLEGATO"}
+                            </Text>
+                          )}
+                        </View>
+                        <Text style={styles.muted}>
+                          {demo
+                            ? isActiveDemo
+                              ? "Dati dimostrativi attivi. Nessun account reale o richiesta al provider."
+                              : canUseDemoProvider(id)
+                                ? "Attiva i dati fittizi per aprire la sezione dedicata."
+                                : id === "stripe"
+                                  ? "La simulazione Stripe è disponibile nei piani Elite e Secret."
+                                  : "Passa al piano Secret per provare l’archiviazione dimostrativa."
+                            : p?.configured || isReadyLive
+                              ? "Servizio configurato. I dati reali si aprono solo dopo la verifica del collegamento."
+                              : "Non collegato: configura e autorizza il servizio per aprire la sezione dedicata."}
+                        </Text>
+                        <View style={styles.row}>
+                          {demo && servicePage && canUseDemoProvider(id)
+                            ? button(
+                                isActiveDemo
+                                  ? "Disattiva dati fittizi"
+                                  : "Attiva dati fittizi",
+                                () =>
+                                  toggleDemoService(id, !isActiveDemo),
+                                !isActiveDemo,
                               )
-                                throw Error("Autorizzazione non disponibile.");
-                              await Linking.openURL(result.url);
-                            }),
-                        )}
-                    </View>
-                  </View>
-                );
-              })}
+                            : demo && servicePage
+                              ? button(
+                                  id === "stripe"
+                                    ? "Scegli Elite o Secret"
+                                    : "Scegli Secret",
+                                  () => setPicker("plan"),
+                                )
+                              : !demo && servicePage && isReadyLive
+                                ? button("Apri sezione", () => nav(servicePage))
+                                : !demo
+                                  ? button("Verifica stato", () =>
+                                      void run(async () => {
+                                        const status =
+                                          await api.get<Record<string, unknown>>(
+                                            "/api/connect",
+                                          );
+                                        const current = [
+                                          ...((status.connections as {
+                                            provider: string;
+                                            status: string;
+                                          }[]) || []),
+                                          ...connectionRows,
+                                        ].filter((item) => item.provider === id);
+                                        setProbe({
+                                          title: name,
+                                          text: current.length
+                                            ? current
+                                                .map((item) => item.status || "Configurato")
+                                                .join("\n")
+                                            : p?.configured
+                                              ? "Configurazione disponibile. Nessun account personale collegato."
+                                              : "Non collegato: configura il servizio prima di eseguire un test reale.",
+                                        });
+                                      }),
+                                    )
+                                  : null}
+                          {!demo &&
+                            p?.configured &&
+                            [
+                              "calendly",
+                              "drive",
+                              "dropbox",
+                              "onedrive",
+                              "google",
+                            ].includes(id) &&
+                            button("Collega account", () =>
+                              void run(async () => {
+                                const result = await api.post<{ url?: string }>(
+                                  "/api/connect/authorize/" + id,
+                                );
+                                if (
+                                  !result.url ||
+                                  !result.url.startsWith("https://")
+                                )
+                                  throw Error("Autorizzazione non disponibile.");
+                                await Linking.openURL(result.url);
+                              }),
+                            )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </>
         )}
+        {demo &&
+          page !== "connect" &&
+          page !== "wallester" &&
+          providerPageService[page] &&
+          demoServices.includes(providerPageService[page]) && (
+            <View style={styles.panel}>
+              <Text style={styles.eyebrow}>
+                DEMO · {providerPageService[page].toUpperCase()} · DATI FITTIZI
+              </Text>
+              <Text style={styles.h2}>
+                {page === "stripe"
+                  ? "Pagamenti dimostrativi"
+                  : demoProviderSamples[providerPageService[page]]?.title ||
+                    "Esempio di integrazione"}
+              </Text>
+              <Text style={styles.muted}>
+                Esempi creati nell’app. Non sono stati inviati dati al provider e
+                non rappresentano un collegamento reale.
+              </Text>
+              {page === "stripe" ? (
+                <>
+                  <View style={[styles.row, { marginTop: 8 }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.tiny}>Incassato · ultimi 30 giorni</Text>
+                      <Text style={styles.number}>{euro(14820)}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.tiny}>In attesa</Text>
+                      <Text style={styles.number}>{euro(1250)}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.h3}>Pagamenti recenti</Text>
+                  {stripeDemoPayments.map((payment) => (
+                    <View key={payment.customer} style={styles.panel}>
+                      <View style={styles.row}>
+                        <Text style={[styles.h3, { flex: 1 }]}>
+                          {payment.customer}
+                        </Text>
+                        <Text style={styles.h3}>{euro(payment.amount)}</Text>
+                      </View>
+                      <Text style={styles.muted}>
+                        {payment.date} · {payment.reason} · {payment.status}
+                      </Text>
+                    </View>
+                  ))}
+                </>
+              ) : (
+                (demoProviderSamples[providerPageService[page]]?.rows || []).map(
+                  (sample) => (
+                    <View key={sample} style={styles.navRow}>
+                      <Icon color={c.accent} name={providerPageService[page]} />
+                      <Text style={[styles.text, { flex: 1 }]}>{sample}</Text>
+                    </View>
+                  ),
+                )
+              )}
+              {button("Disattiva dati fittizi", () =>
+                toggleDemoService(providerPageService[page], false),
+              )}
+            </View>
+          )}
         {page === "wallester" && (
           <>
             <Text style={styles.muted}>
@@ -945,6 +1405,10 @@ export default function Workspace({
                 </Text>
               </View>
             ))}
+            {demo &&
+              button("Disattiva dati fittizi", () =>
+                toggleDemoService("wallester", false),
+              )}
           </>
         )}
         {page === "mail" && (
@@ -1167,18 +1631,32 @@ export default function Workspace({
             <Text style={styles.eyebrow}>
               PRIME {names[plan]?.toUpperCase()} · WORKSPACE
             </Text>
-            {sections.map(([id, label]) => (
-              <Pressable
-                key={id}
-                style={[
-                  styles.navRow,
-                  page === id && { backgroundColor: c.line },
-                ]}
-                onPress={() => nav(id)}
-              >
-                <Icon color={c.accent} name={id} />
-                <Text style={styles.text}>{label}</Text>
-              </Pressable>
+            {visibleMenuGroups.map((group) => (
+              <View key={group.title} style={{ gap: 3 }}>
+                <Text style={styles.eyebrow}>{group.title}</Text>
+                {group.items.map((item) =>
+                  "section" in item ? (
+                    <Text
+                      key={`${group.title}-${item.section}`}
+                      style={[styles.tiny, { marginTop: 12, color: c.muted }]}
+                    >
+                      {item.section}
+                    </Text>
+                  ) : (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.navRow,
+                        page === item.id && { backgroundColor: c.line },
+                      ]}
+                      onPress={() => nav(item.id)}
+                    >
+                      <Icon color={c.accent} name={item.id} />
+                      <Text style={styles.text}>{item.label}</Text>
+                    </Pressable>
+                  ),
+                )}
+              </View>
             ))}
             <Text style={styles.h3}>{me.tenant}</Text>
             <Text style={styles.muted}>{me.email}</Text>
@@ -1241,11 +1719,16 @@ export default function Workspace({
                       backgroundColor: palettes[id]?.accent || c.accent,
                     }}
                   />
+                <View style={{ flex: 1, gap: 3 }}>
                   <Text style={styles.text}>
                     {picker === "theme"
-                      ? themeNames[id]
+                      ? `${themeNames[id]}${theme === id ? " · Attivo" : ""}`
                       : names[id] || id.toUpperCase()}
                   </Text>
+                  {picker === "theme" && !!themeDetails[id] && (
+                    <Text style={styles.tiny}>{themeDetails[id]}</Text>
+                  )}
+                </View>
                 </Pressable>
               ))}
               {button("Chiudi", () => setPicker(""))}
