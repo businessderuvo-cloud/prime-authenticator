@@ -185,7 +185,7 @@ const providers = [
   ["google", "Google Calendar", "/brands/providers/googlecalendar.svg"],
   ["apple", "iCloud", ""],
   ["calendly", "Calendly", "/brands/providers/calendly.svg"],
-  ["whatsapp", "WhatsApp Business", ""],
+  ["whatsapp", "WhatsApp Business", "/brands/providers/whatsapp.svg"],
   ["drive", "Google Drive", "/brands/providers/googledrive-nav-color.svg"],
   ["onedrive", "OneDrive", "/brands/providers/microsoftonedrive.svg"],
   ["dropbox", "Dropbox", "/brands/providers/dropbox.svg"],
@@ -196,7 +196,7 @@ const providers = [
   ["stripe", "Stripe", "/assets/stripe-connect-color.svg"],
   ["voip", "Telefonia VoIP", "/assets/voipstudio-connect-color.svg"],
   ["contactout", "ContactOut", "/brands/providers/contactout.png"],
-  ["datagma", "Datagma", ""],
+  ["datagma", "Datagma", "/brands/providers/datagma-official.svg"],
 ];
 const referenceLabel = (rows: Row[], id: unknown) => {
   const row = rows.find((r) => r.id === id);
@@ -821,7 +821,13 @@ export default function Workspace({
                 return (
                   <View key={id} style={styles.panel}>
                     <View style={styles.row}>
-                      {logo.endsWith(".svg") ? (
+                      {id === "apple" ? (
+                        <SvgXml
+                          xml={brand.apple.replace("#000000", c.text)}
+                          width={28}
+                          height={28}
+                        />
+                      ) : logo.endsWith(".svg") ? (
                         <SvgUri
                           uri={"https://www.primegestionale.it" + logo}
                           width={35}
