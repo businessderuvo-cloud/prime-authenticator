@@ -146,14 +146,35 @@ const sections = [
   ["valuations", "Valutazioni"],
   ["leases", "Locazioni"],
   ["commissions", "Provvigioni"],
+  ["portals", "Portali immobiliari"],
   ["documents", "Documenti"],
   ["signature_requests", "Firme elettroniche"],
   ["connect", "PRIME Connect"],
+  ["calendly", "Calendly"],
+  ["voip", "Telefonia VoIP"],
+  ["storage_drive", "Google Drive"],
+  ["storage_onedrive", "OneDrive"],
+  ["storage_dropbox", "Dropbox"],
+  ["stripe", "Stripe · Pagamenti"],
+  ["contactout", "ContactOut · Ricerche"],
+  ["datagma", "Datagma · Ricerche"],
   ["wallester", "Wallester · Finanze"],
   ["mail", "Email"],
   ["assistant", "Vanessa"],
   ["upgrade", "Piano e upgrade"],
   ["security", "Sicurezza account"],
+  ["audit", "Registro attività"],
+  ["roadmap", "Stato sviluppo"],
+];
+const providerPages = [
+  "calendly",
+  "voip",
+  "storage_drive",
+  "storage_onedrive",
+  "storage_dropbox",
+  "stripe",
+  "contactout",
+  "datagma",
 ];
 const providers = [
   ["google", "Google Calendar", "/brands/providers/googlecalendar.svg"],
@@ -334,7 +355,8 @@ export default function Workspace({
         ...old,
         ...Object.fromEntries(entities.map((x, i) => [x, all[i]])),
       }));
-    } else if (page === "connect") setConnection(await api.get("/api/connect"));
+    } else if (page === "connect" || providerPages.includes(page))
+      setConnection(await api.get("/api/connect"));
     else if (page === "wallester") {
       const state = await api.get<{ accounts: Row[] }>(
         "/api/connect/wallester",
@@ -348,6 +370,11 @@ export default function Workspace({
     if (page === "agents") {
       const rows = await api.get<Row[]>("/api/agents");
       setData((old) => ({ ...old, agents: rows }));
+    }
+    if (page === "portals") setConnection(await api.get("/api/portals"));
+    if (page === "audit") {
+      const rows = await api.get<Row[]>("/api/audit");
+      setData((old) => ({ ...old, audit: rows }));
     }
     if (page === "mail") {
       const result = await api.get<{ mail?: Row[] }>("/api/connect");
@@ -381,7 +408,9 @@ export default function Workspace({
     ];
     await Promise.all(
       refs.map(async (id) => {
-        const values = await api.get<Row[]>(id==='members'?'/api/members':"/api/entities/" + id);
+        const values = await api.get<Row[]>(
+          id === "members" ? "/api/members" : "/api/entities/" + id,
+        );
         setData((old) => ({ ...old, [id]: values }));
       }),
     );
@@ -474,6 +503,32 @@ export default function Workspace({
       </View>
     );
   }
+  const [found, setFound] = useState<
+    (Row & { entity: string; context: string })[]
+  >([]);
+  useEffect(() => {
+    let active = true;
+    const task = setTimeout(() => {
+      if (query.length < 2) {
+        setFound([]);
+        return;
+      }
+      void api
+        .get<(Row & { entity: string; context: string })[]>(
+          "/api/search?q=" + encodeURIComponent(query),
+        )
+        .then((rows) => {
+          if (active) setFound(rows);
+        })
+        .catch(() => {
+          if (active) setFound([]);
+        });
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(task);
+    };
+  }, [query, api]);
   const demo = mode === "demo";
   const connectionRows = [
     ...((connection.providers as {
@@ -546,6 +601,23 @@ export default function Workspace({
           />
         }
       >
+        {found.length > 0 && (
+          <View style={styles.panel}>
+            <Text style={styles.h2}>Risultati in PRIME</Text>
+            {found.map((r) => (
+              <Pressable
+                key={r.entity + r.id}
+                onPress={() => {
+                  setQuery("");
+                  void run(() => openEditor(r.entity, r));
+                }}
+              >
+                <Text style={styles.h3}>{r.title}</Text>
+                <Text style={styles.muted}>{schema[r.entity]?.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
         {!!error && (
           <View accessibilityRole="alert" style={styles.panel}>
             <Text style={{ color: "#e36c6c" }}>{error}</Text>
@@ -711,100 +783,105 @@ export default function Workspace({
               <Text style={styles.muted}>{text(r.role)}</Text>
             </View>
           ))}
-        {page === "connect" && (
+        {(page === "connect" || providerPages.includes(page)) && (
           <>
             <Text style={styles.muted}>
               Collega i tuoi strumenti e prova i dati dimostrativi. Ogni
               servizio conserva le regole e i permessi del tuo piano.
             </Text>
-            {providers.map(([id, name, logo]) => {
-              const p = connectionRows.find((p) => p.provider === id);
-              return (
-                <View key={id} style={styles.panel}>
-                  <View style={styles.row}>
-                    {logo.endsWith(".svg") ? (
-                      <SvgUri
-                        uri={"https://www.primegestionale.it" + logo}
-                        width={35}
-                        height={26}
-                      />
-                    ) : logo ? (
-                      <Image
-                        source={{
-                          uri: "https://www.primegestionale.it" + logo,
-                        }}
-                        style={{ width: 30, height: 30 }}
-                      />
-                    ) : (
-                      <Icon color={c.accent} name={id} />
-                    )}
-                    <Text style={styles.h2}>{name}</Text>
-                  </View>
-                  <Text style={styles.muted}>
-                    {id === "wallester" && demo
-                      ? "Conti, movimenti e saldi fittizi. Nessun conto reale viene collegato."
-                      : p?.configured
-                        ? "Servizio configurato sulla piattaforma. Autorizza il tuo account per collegarlo."
-                        : "Configurazione o disponibilità soggetta al piano e al server PRIME."}
-                  </Text>
-                  <View style={styles.row}>
-                    {button(
-                      id === "wallester" && demo
-                        ? "Attiva dati fittizi"
-                        : "Verifica stato",
-                      () =>
-                        void run(async () => {
-                          if (id === "wallester") {
-                            nav("wallester");
-                            return;
-                          }
-                          const status =
-                            await api.get<Record<string, unknown>>(
-                              "/api/connect",
-                            );
-                          const connections = (
-                            (status.connections as {
-                              provider: string;
-                              status: string;
-                            }[]) || []
-                          ).filter((x) => x.provider === id);
-                          setProbe({
-                            title: name,
-                            text: connections.length
-                              ? connections.map((x) => x.status).join("\n")
-                              : p?.configured
-                                ? "Configurazione disponibile. Nessun account personale collegato. La configurazione non costituisce un test riuscito del servizio."
-                                : "Non collegato: configura il servizio prima di eseguire un test reale.",
-                          });
-                        }),
-                    )}
-                    {p?.configured &&
-                      [
-                        "calendly",
-                        "drive",
-                        "dropbox",
-                        "onedrive",
-                        "google",
-                      ].includes(id) &&
-                      button(
-                        "Collega account",
+            {providers
+              .filter(
+                ([id]) =>
+                  page === "connect" || id === page.replace("storage_", ""),
+              )
+              .map(([id, name, logo]) => {
+                const p = connectionRows.find((p) => p.provider === id);
+                return (
+                  <View key={id} style={styles.panel}>
+                    <View style={styles.row}>
+                      {logo.endsWith(".svg") ? (
+                        <SvgUri
+                          uri={"https://www.primegestionale.it" + logo}
+                          width={35}
+                          height={26}
+                        />
+                      ) : logo ? (
+                        <Image
+                          source={{
+                            uri: "https://www.primegestionale.it" + logo,
+                          }}
+                          style={{ width: 30, height: 30 }}
+                        />
+                      ) : (
+                        <Icon color={c.accent} name={id} />
+                      )}
+                      <Text style={styles.h2}>{name}</Text>
+                    </View>
+                    <Text style={styles.muted}>
+                      {id === "wallester" && demo
+                        ? "Conti, movimenti e saldi fittizi. Nessun conto reale viene collegato."
+                        : p?.configured
+                          ? "Servizio configurato sulla piattaforma. Autorizza il tuo account per collegarlo."
+                          : "Configurazione o disponibilità soggetta al piano e al server PRIME."}
+                    </Text>
+                    <View style={styles.row}>
+                      {button(
+                        id === "wallester" && demo
+                          ? "Attiva dati fittizi"
+                          : "Verifica stato",
                         () =>
                           void run(async () => {
-                            const result = await api.post<{ url?: string }>(
-                              "/api/connect/authorize/" + id,
-                            );
-                            if (
-                              !result.url ||
-                              !result.url.startsWith("https://")
-                            )
-                              throw Error("Autorizzazione non disponibile.");
-                            await Linking.openURL(result.url);
+                            if (id === "wallester") {
+                              nav("wallester");
+                              return;
+                            }
+                            const status =
+                              await api.get<Record<string, unknown>>(
+                                "/api/connect",
+                              );
+                            const connections = (
+                              (status.connections as {
+                                provider: string;
+                                status: string;
+                              }[]) || []
+                            ).filter((x) => x.provider === id);
+                            setProbe({
+                              title: name,
+                              text: connections.length
+                                ? connections.map((x) => x.status).join("\n")
+                                : p?.configured
+                                  ? "Configurazione disponibile. Nessun account personale collegato. La configurazione non costituisce un test riuscito del servizio."
+                                  : "Non collegato: configura il servizio prima di eseguire un test reale.",
+                            });
                           }),
                       )}
+                      {p?.configured &&
+                        [
+                          "calendly",
+                          "drive",
+                          "dropbox",
+                          "onedrive",
+                          "google",
+                        ].includes(id) &&
+                        button(
+                          "Collega account",
+                          () =>
+                            void run(async () => {
+                              const result = await api.post<{ url?: string }>(
+                                "/api/connect/authorize/" + id,
+                              );
+                              if (
+                                !result.url ||
+                                !result.url.startsWith("https://")
+                              )
+                                throw Error("Autorizzazione non disponibile.");
+                              await Linking.openURL(result.url);
+                            }),
+                        )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })}
           </>
         )}
         {page === "wallester" && (
@@ -939,6 +1016,65 @@ export default function Workspace({
               </View>
             ))}
           </>
+        )}
+        {page === "portals" && (
+          <>
+            <Text style={styles.muted}>
+              Prepara bozze degli annunci. La pubblicazione esterna richiede
+              l’attivazione del relativo canale.
+            </Text>
+            {((connection.portals as Row[]) || []).map((p) => (
+              <View key={text(p.id)} style={styles.panel}>
+                <Text style={styles.h2}>{text(p.name)}</Text>
+                <Text style={styles.muted}>{text(p.status)}</Text>
+                {button("Prepara bozza", () =>
+                  setChoices({
+                    label: "Scegli immobile",
+                    items: ((connection.properties as Row[]) || []).map(
+                      (r) => ({ label: r.title, value: r.id }),
+                    ),
+                    choose: (id) => {
+                      setChoices(null);
+                      void run(async () => {
+                        await api.post("/api/portals/drafts", {
+                          portals: [p.id],
+                          property_id: id,
+                          operation: "publish",
+                        });
+                        await load();
+                      });
+                    },
+                  }),
+                )}
+              </View>
+            ))}
+            {((connection.drafts as Row[]) || []).map((r, i) => (
+              <View style={styles.panel} key={i}>
+                <Text style={styles.text}>
+                  {text(r.portal)} · {text(r.operation)}
+                </Text>
+                <Text style={styles.muted}>{text(r.updated_at)}</Text>
+              </View>
+            ))}
+          </>
+        )}
+        {page === "audit" &&
+          (data.audit || []).map((r, i) => (
+            <View key={text(r.id || i)} style={styles.panel}>
+              <Text style={styles.h3}>{text(r.action || r.title)}</Text>
+              <Text style={styles.muted}>{text(r.created_at)}</Text>
+            </View>
+          ))}
+        {page === "roadmap" && (
+          <View style={styles.panel}>
+            <Text style={styles.h2}>PRIME Mobile 0.2</Text>
+            <Text style={styles.muted}>
+              Workspace nativo, schede modificabili, piani, temi e dati della
+              demo condivisi con il gestionale. I collegamenti esterni
+              richiedono autorizzazione e una verifica reale del servizio. Gli
+              acquisti dei piani attendono la configurazione degli store.
+            </Text>
+          </View>
         )}
         {page === "security" && (
           <>
@@ -1184,7 +1320,7 @@ export default function Workspace({
             {button("Salva scheda", () => void run(save), true)}
           </ScrollView>
           <Modal
-            visible={!!choices}
+            visible={!!choices && !!editing}
             transparent
             onRequestClose={() => setChoices(null)}
           >
@@ -1210,6 +1346,32 @@ export default function Workspace({
             </View>
           </Modal>
         </SafeAreaView>
+      </Modal>
+      <Modal
+        visible={!!choices && !editing}
+        transparent
+        onRequestClose={() => setChoices(null)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <ScrollView>
+              <Text style={styles.h2}>{choices?.label}</Text>
+              {choices?.items.map((item, i) => (
+                <Pressable
+                  style={styles.navRow}
+                  key={i}
+                  onPress={() => {
+                    choices.choose(item.value);
+                    setChoices(null);
+                  }}
+                >
+                  <Text style={styles.text}>{item.label}</Text>
+                </Pressable>
+              ))}
+              {button("Chiudi", () => setChoices(null))}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
       <Modal
         visible={!!probe}
