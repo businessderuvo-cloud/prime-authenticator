@@ -1,5 +1,13 @@
 # PRIME Authenticator
 
+## PRIME Mobile — gestionale Android e iOS
+
+Il gestionale mobile nativo si trova nella cartella [`mobile/`](mobile/README.md), separato da PRIME Authenticator. Include switch Demo/Live e collegamento alla demo pubblica PRIME senza credenziali. È una prima versione: i pagamenti reali e diverse funzioni avanzate richiedono ancora completamento.
+
+[APK PRIME Mobile Android 0.1.0](https://github.com/businessderuvo-cloud/prime-authenticator/releases/tag/mobile-android-v0.1.0) · [Compilazione APK](https://github.com/businessderuvo-cloud/prime-authenticator/actions/workflows/prime-mobile-apk.yml)
+
+La compilazione del gestionale ha un processo dedicato e non modifica gli APK o le firme di Authenticator.
+
 ## App Android nativa 1.0.2
 
 [Scarica APK Android](https://github.com/businessderuvo-cloud/prime-authenticator/releases/download/android-v1.0.2/prime-authenticator-android-v1.0.2.apk)

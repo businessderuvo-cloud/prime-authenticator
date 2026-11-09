@@ -1,0 +1,94 @@
+name: PRIME Mobile APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/prime-mobile-apk.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prime-mobile-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install Android components
+        run: sdkmanager 'platform-tools' 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+      - name: Install application dependencies
+        run: npm ci
+      - name: Check source and session isolation
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+      - name: Generate native Android application
+        run: npx expo prebuild --platform android --no-install
+      - name: Build standalone APK
+        working-directory: mobile/android
+        env:
+          NODE_ENV: production
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --console=plain
+      - name: Verify signature, package and embedded application
+        run: |
+          set -eu
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.mobile'"
+          unzip -l "$apk" | grep -F 'assets/index.android.bundle'
+          mkdir -p release
+          cp "$apk" release/PRIME-Mobile-Android-v0.1.0.apk
+          (cd release && sha256sum PRIME-Mobile-Android-v0.1.0.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PRIME-Mobile-Android-v0.1.0
+          path: mobile/release/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish downloadable APK alongside Authenticator
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag=mobile-android-v0.1.0
+          cat > release/notes.md <<'NOTES'
+          Prima versione di prova di PRIME Mobile per Android 64 bit (arm64).
+
+          App nativa React Native: nessuna WebView del gestionale, nessun Expo Go necessario. Include logo PRIME, switch Demo/Live, demo pubblica senza password, consultazione di immobili/contatti/agenda e collegamento ai percorsi di accesso e KYB esistenti. La raccolta dei documenti KYB apre il servizio esterno.
+
+          Gli acquisti non sono ancora attivi: sono necessari account store, prodotti e verifica server dei pagamenti. Non comprende ancora tutte le funzioni del gestionale. APK di prova firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play.
+
+          L’app Authenticator già presente nel repository rimane separata e le sue release non vengono modificate.
+          NOTES
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" release/PRIME-Mobile-Android-v0.1.0.apk release/SHA256SUMS.txt --clobber
+          else
+            gh release create "$tag" release/PRIME-Mobile-Android-v0.1.0.apk release/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.1.0 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
+          fi
