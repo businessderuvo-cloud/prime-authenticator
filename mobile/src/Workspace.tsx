@@ -553,7 +553,7 @@ export default function Workspace({
         </Pressable>
         <SvgXml
           xml={theme === "light" ? brand.light : brand.dark}
-          width={106}
+          width={90}
           height={30}
         />
         <View style={{ flex: 1 }} />
@@ -1396,7 +1396,7 @@ function makeStyles(c: typeof palettes.light) {
       flexDirection: "row",
       alignItems: "center",
       padding: 16,
-      gap: 18,
+      gap: 8,
       borderBottomWidth: 1,
       borderColor: c.line,
     },
@@ -1517,3 +1517,4 @@ function makeStyles(c: typeof palettes.light) {
     },
   });
 }
+
