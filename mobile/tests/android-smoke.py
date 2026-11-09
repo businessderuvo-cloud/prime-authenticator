@@ -59,7 +59,7 @@ try:
     tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
     expect('PRIME Connect');expect('Attiva dati fittizi')
     tap('Attiva dati fittizi',scroll=True)
-    expect('Pagamenti dimostrativi');expect('ultimi 30 giorni');shot('04-stripe-demo.png')
+    expect('Dati dimostrativi');shot('04-stripe-demo.png')
     tap('Disattiva dati fittizi',scroll=True);expect('PRIME Connect');scroll_top()
     scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
