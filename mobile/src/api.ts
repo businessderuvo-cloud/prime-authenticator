@@ -37,7 +37,9 @@ export class ApiError extends Error {
     super(message);
   }
 }
-const ORIGIN = "https://www.primegestionale.it";
+// Use the canonical host directly. The www host redirects and can leave the
+// native fetch request waiting until its abort timeout on Android/iOS.
+const ORIGIN = "https://primegestionale.it";
 const KEY = "prime.live.session.v1";
 export class PrimeApi {
   private cookie = "";
@@ -52,7 +54,12 @@ export class PrimeApi {
     body?: unknown,
   ): Promise<T> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 25000);
+    // The public demo can cold start on the first request. Give it enough time
+    // to wake up instead of surfacing React Native's “fetch request cancelled”.
+    const timer = setTimeout(
+      () => controller.abort(),
+      this.mode === "demo" ? 90000 : 25000,
+    );
     try {
       const response = await this.transport(
         `${ORIGIN}${this.mode === "demo" ? "/demo" : ""}${path}`,

@@ -67,7 +67,7 @@ test("demo never sends saved live credentials; CSRF belongs to demo; switching p
   );
   assert.equal(
     calls[2].url,
-    "https://www.primegestionale.it/demo/api/customer-demo/plan",
+    "https://primegestionale.it/demo/api/customer-demo/plan",
   );
   assert.equal(calls[2].options.headers["X-CSRF-Token"], csrf);
   assert.equal(JSON.parse(calls[2].options.body).plan, "elite");

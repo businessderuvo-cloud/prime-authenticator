@@ -81,8 +81,8 @@ const money = (v: unknown) =>
     : "";
 const message = (e: unknown) =>
   e instanceof Error
-    ? e.name === "AbortError"
-      ? "La connessione sta impiegando troppo tempo. Riprova."
+    ? e.name === "AbortError" || /fetch request has been cancell?ed|aborted/i.test(e.message)
+      ? "La demo pubblica sta impiegando troppo tempo a rispondere. Riprova tra qualche secondo."
       : e.message
     : "Operazione non riuscita.";
 function Button({
