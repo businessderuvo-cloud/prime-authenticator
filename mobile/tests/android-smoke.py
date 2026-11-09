@@ -26,6 +26,20 @@ def expect(text,timeout=50):
         time.sleep(2)
     adb('logcat','-d')
     raise AssertionError('Text not found: '+text)
+def scroll_expect(text,timeout=40):
+    until=time.time()+timeout
+    while time.time()<until:
+        root=tree()
+        if any(text in (n.get('text','')+' '+n.get('content-desc','')) for n in root.iter('node')):
+            assert not any(n.get('class')=='android.webkit.WebView' for n in root.iter('node'))
+            return
+        adb('shell','input','swipe','540','1600','540','600','400')
+        time.sleep(1)
+    raise AssertionError('Text not found after scrolling: '+text)
+def scroll_top():
+    for _ in range(5):
+        adb('shell','input','swipe','540','600','540','1600','350')
+        time.sleep(.3)
 def shot(name):
     until=time.time()+30
     while time.time()<until:
@@ -40,7 +54,11 @@ try:
     tap('Cambia piano ▾');tap('Secret Plan');expect('Secret Plan · Demo pubblica');shot('02-secret.png')
     tap('Scegli tema');tap('Blu VIP');expect('Ogni connessione conta.');shot('02-tema-vip.png')
     tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
-    expect('PRIME Connect');expect('Google Calendar');expect('Servizio configurato sulla piattaforma.');shot('04-connect.png')
+    expect('PRIME Connect');expect('Attiva dati fittizi')
+    tap('Attiva dati fittizi',scroll=True)
+    expect('Pagamenti dimostrativi');expect('ultimi 30 giorni');shot('04-stripe-demo.png')
+    tap('Disattiva dati fittizi',scroll=True);expect('PRIME Connect');scroll_top()
+    scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
     shot('05-last-state.png')
     (out/'android-ui.xml').write_bytes(adb('shell','cat','/sdcard/prime-ui.xml'))
