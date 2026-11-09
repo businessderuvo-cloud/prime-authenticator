@@ -1,6 +1,6 @@
 {
   "name": "prime-mobile",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "main": "expo-router/entry",
   "dependencies": {
     "expo": "~58.0.23",

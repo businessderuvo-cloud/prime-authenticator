@@ -2,7 +2,7 @@
   "expo": {
     "name": "PRIME",
     "slug": "prime-mobile",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "orientation": "default",
     "scheme": "prime",
     "icon": "./assets/prime-icon.png",
@@ -20,7 +20,7 @@
       "package": "it.primegestionale.mobile",
       "permissions": [],
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
-      "versionCode": 4
+      "versionCode": 5
     },
     "plugins": [
       "expo-secure-store",
