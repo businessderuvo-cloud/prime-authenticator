@@ -24,6 +24,7 @@ import definitions from "./site-schema.json";
 import brand from "./brand.json";
 import providerLogos from "./provider-logos.json";
 import NativeMap from "./NativeMap";
+import Vanessa from "./Vanessa";
 import { metricValue } from "./site-metrics";
 type Field = {
   label: string;
@@ -459,8 +460,6 @@ export default function Workspace({
     items: { label: string; value: unknown }[];
     choose: (value: unknown) => void;
   } | null>(null);
-  const [chat, setChat] = useState<{ role: string; text: string }[]>([]),
-    [draft, setDraft] = useState("");
   const [probe, setProbe] = useState<{ title: string; text: string } | null>(
     null,
   );
@@ -582,7 +581,7 @@ export default function Workspace({
     setDashboard({});
     setFinance([]);
     setMovements([]);
-    setChat([]);
+
     await run(load);
   });
   useEffect(() => {
@@ -1536,7 +1535,7 @@ export default function Workspace({
               </View>
             ))}
             <Text style={styles.h2}>Movimenti</Text>
-            <FinanceChart color="#49a774" muted={c.muted} />
+            {demo && <FinanceChart color="#49a774" muted={c.muted} />}
             {movements.map((r, i) => (
               <View style={styles.panel} key={text(r.record_id || i)}>
                 <Text style={styles.h3}>{text(r.description)}</Text>
@@ -1572,77 +1571,7 @@ export default function Workspace({
             ))}
           </>
         )}
-        {page === "assistant" && (
-          <>
-            <View style={styles.assistantHero}>
-              <Image
-                source={require("../assets/vanessa-face-icon.png")}
-                resizeMode="cover"
-                style={styles.assistantAvatar}
-              />
-              <View style={{ flex: 1, gap: 5 }}>
-                <Text style={styles.h2}>Vanessa</Text>
-                <Text style={styles.muted}>
-                  Assistente PRIME · pronta ad aiutarti nel workspace
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.muted}>
-              {rank >= 2
-                ? "Vanessa · Chat collegata al workspace e ai dati consentiti."
-                : "Vanessa è inclusa da VIP in poi. Cambia piano nella demo per provarla."}
-            </Text>
-            {chat.map((m, i) => (
-              <View style={styles.panel} key={i}>
-                <Text style={styles.eyebrow}>
-                  {m.role === "user" ? "TU" : "VANESSA"}
-                </Text>
-                <Text selectable style={styles.text}>
-                  {m.text}
-                </Text>
-              </View>
-            ))}
-            <TextInput
-              multiline
-              placeholder="Scrivi a Vanessa…"
-              placeholderTextColor={c.muted}
-              value={draft}
-              onChangeText={setDraft}
-              style={styles.input}
-            />
-            {button(
-              "Invia",
-              () =>
-                void run(async () => {
-                  const message = draft.trim();
-                  if (!message) return;
-                  setDraft("");
-                  setChat((old) => [...old, { role: "user", text: message }]);
-                  const result = await api.post<{
-                    reply?: string;
-                    message?: string;
-                  }>("/api/assistant/chat", {
-                    messages: [
-                      ...chat.map((m) => ({ role: m.role, content: m.text })),
-                      { role: "user", content: message },
-                    ],
-                  });
-                  setChat((old) => [
-                    ...old,
-                    {
-                      role: "assistant",
-                      text:
-                        result.reply ||
-                        result.message ||
-                        "Nessuna risposta testuale restituita.",
-                    },
-                  ]);
-                }),
-              true,
-              rank < 2,
-            )}
-          </>
-        )}
+        {page === "assistant" && <Vanessa api={api} colors={c} allowed={rank >= 2} />}
         {page === "upgrade" && (
           <>
             <Text style={styles.muted}>
@@ -2100,7 +2029,7 @@ function FinanceChart({ color, muted }: { color: string; muted: string }) {
   return (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={{ color: muted, fontSize: 12 }}>Andamento ultimi 30 giorni</Text>
+        <Text style={{ color: muted, fontSize: 12 }}>DEMO · Andamento ultimi 30 giorni</Text>
         <Text style={{ color, fontSize: 12, fontWeight: "700" }}>↗ +12,4%</Text>
       </View>
       <Svg height={120} width="100%" viewBox="0 0 320 120" preserveAspectRatio="none">

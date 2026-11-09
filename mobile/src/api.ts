@@ -52,6 +52,7 @@ export class PrimeApi {
     path: string,
     method = "GET",
     body?: unknown,
+    extraHeaders: Record<string, string> = {},
   ): Promise<T> {
     const controller = new AbortController();
     // The public demo can cold start on the first request. Give it enough time
@@ -68,6 +69,7 @@ export class PrimeApi {
           credentials: "omit",
           signal: controller.signal,
           headers: {
+            ...extraHeaders,
             Accept: "application/json",
             ...(body !== undefined
               ? { "Content-Type": "application/json" }
@@ -175,6 +177,11 @@ export class PrimeApi {
   }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>(path, "POST", body);
+  }
+  eliteTool<T>(body: unknown, token: string) {
+    return this.request<T>("/api/elite/tools", "POST", body, {
+      "X-Prime-Session": token,
+    });
   }
   change<T>(path: string, method: string, body: unknown = {}) {
     return this.request<T>(path, method, body);
