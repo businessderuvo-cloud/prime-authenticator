@@ -1,0 +1,1480 @@
+{
+  "streets": {
+    "label": "Vie",
+    "singular": "via",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "city": {
+        "label": "Città",
+        "type": "text",
+        "required": true
+      },
+      "district": {
+        "label": "Quartiere / zona",
+        "type": "text"
+      },
+      "postal_code": {
+        "label": "CAP",
+        "type": "text",
+        "max": 10
+      },
+      "census_status": {
+        "label": "Stato censimento",
+        "type": "select",
+        "options": [
+          "da censire",
+          "parziale",
+          "censita"
+        ]
+      }
+    }
+  },
+  "buildings": {
+    "label": "Civici e stabili",
+    "singular": "stabile",
+    "fields": {
+      "title": {
+        "label": "Numero civico",
+        "type": "text",
+        "required": true
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "street_id": {
+        "label": "Via",
+        "type": "ref",
+        "entity": "streets",
+        "required": true
+      },
+      "concierge_name": {
+        "label": "Custode / portineria",
+        "type": "text"
+      },
+      "concierge_phone": {
+        "label": "Telefono custode",
+        "type": "text"
+      },
+      "concierge_hours": {
+        "label": "Orari portineria",
+        "type": "text"
+      },
+      "administrator_name": {
+        "label": "Amministratore / studio",
+        "type": "text"
+      },
+      "administrator_phone": {
+        "label": "Telefono amministratore",
+        "type": "text"
+      },
+      "administrator_email": {
+        "label": "Email amministratore",
+        "type": "email"
+      },
+      "contact_source": {
+        "label": "Fonte recapiti",
+        "type": "text"
+      },
+      "verified_on": {
+        "label": "Recapiti verificati il",
+        "type": "date"
+      }
+    }
+  },
+  "units": {
+    "label": "Appartamenti censiti",
+    "singular": "appartamento",
+    "fields": {
+      "title": {
+        "label": "Interno",
+        "type": "text",
+        "required": true
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "is_hot_lead": {
+        "label": "Lead caldo",
+        "type": "checkbox"
+      },
+      "assigned_agent_id": {
+        "label": "Agente assegnato",
+        "type": "ref",
+        "entity": "members",
+        "required": false,
+        "default": ""
+      },
+      "building_id": {
+        "label": "Stabile",
+        "type": "ref",
+        "entity": "buildings",
+        "required": true
+      },
+      "staircase": {
+        "label": "Scala",
+        "type": "text"
+      },
+      "floor": {
+        "label": "Piano",
+        "type": "text"
+      },
+      "area": {
+        "label": "Superficie m²",
+        "type": "number",
+        "min": 0
+      },
+      "rooms": {
+        "label": "Locali",
+        "type": "number",
+        "min": 0,
+        "integer": true
+      },
+      "has_garage": {
+        "label": "Garage",
+        "type": "checkbox"
+      },
+      "property_type": {
+        "label": "Tipologia (es. trilocale)",
+        "type": "text"
+      },
+      "condition": {
+        "label": "Condizioni dell’appartamento",
+        "type": "text"
+      },
+      "occupancy_status": {
+        "label": "Occupazione",
+        "type": "select",
+        "options": [
+          "sconosciuto",
+          "libero",
+          "proprietario",
+          "inquilino"
+        ]
+      },
+      "commercial_status": {
+        "label": "Commercializzazione",
+        "type": "select",
+        "options": [
+          "non in vendita",
+          "in vendita",
+          "in affitto",
+          "altra agenzia"
+        ]
+      },
+      "acquisition_status": {
+        "label": "Acquisizione",
+        "type": "select",
+        "options": [
+          "da verificare",
+          "opportunità",
+          "in contatto",
+          "acquisito",
+          "non interessato"
+        ]
+      }
+    }
+  },
+  "contacts": {
+    "label": "CRM · Persone",
+    "singular": "contatto",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "is_hot_lead": {
+        "label": "Lead caldo",
+        "type": "checkbox"
+      },
+      "assigned_agent_id": {
+        "label": "Agente assegnato",
+        "type": "ref",
+        "entity": "members",
+        "required": false,
+        "default": ""
+      },
+      "email": {
+        "label": "Email",
+        "type": "email"
+      },
+      "phone": {
+        "label": "Telefono",
+        "type": "text"
+      },
+      "phone_kind": {
+        "label": "Tipo di numero",
+        "type": "select",
+        "options": [
+          "",
+          "Ufficio",
+          "Casa",
+          "Cell personale",
+          "Cell di lavoro"
+        ]
+      },
+      "contact_type": {
+        "label": "Tipo di contatto",
+        "type": "select",
+        "options": [
+          "potenziale cliente",
+          "proprietario",
+          "comproprietario",
+          "inquilino",
+          "acquirente",
+          "professionista"
+        ]
+      },
+      "do_not_contact": {
+        "label": "Non ricontattare",
+        "type": "checkbox"
+      },
+      "profession": {
+        "label": "Professione",
+        "type": "text"
+      },
+      "marital_status": {
+        "label": "Stato civile (facoltativo)",
+        "type": "select",
+        "options": [
+          "non indicato",
+          "celibe / nubile",
+          "coniugato/a",
+          "convivente",
+          "separato/a",
+          "divorziato/a",
+          "vedovo/a"
+        ]
+      },
+      "has_children": {
+        "label": "Ha figli (facoltativo)",
+        "type": "select",
+        "options": [
+          "non indicato",
+          "sì",
+          "no"
+        ]
+      },
+      "preferred_channel": {
+        "label": "Canale preferito",
+        "type": "select",
+        "options": [
+          "non indicato",
+          "telefono",
+          "WhatsApp",
+          "email",
+          "SMS",
+          "social"
+        ]
+      },
+      "preferred_days": {
+        "label": "Giorni preferiti (es. lunedì e giovedì)",
+        "type": "text"
+      },
+      "preferred_time_from": {
+        "label": "Contattare dalle",
+        "type": "time"
+      },
+      "preferred_time_to": {
+        "label": "Contattare fino alle",
+        "type": "time"
+      },
+      "preference_notes": {
+        "label": "Altre preferenze di contatto",
+        "type": "textarea",
+        "max": 1000
+      },
+      "info_source": {
+        "label": "Fonte delle informazioni",
+        "type": "text"
+      },
+      "verified_on": {
+        "label": "Informazioni verificate il",
+        "type": "date"
+      }
+    }
+  },
+  "properties": {
+    "label": "Immobili in gestione",
+    "singular": "immobile",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "mandate_expires_on": {
+        "label": "Scadenza incarico",
+        "type": "date"
+      },
+      "unit_id": {
+        "label": "Appartamento censito",
+        "type": "ref",
+        "entity": "units",
+        "required": false
+      },
+      "owner_id": {
+        "label": "Proprietario",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "assigned_agent_id": {
+        "label": "Agente assegnato",
+        "type": "ref",
+        "entity": "members",
+        "required": false,
+        "default": ""
+      },
+      "price": {
+        "label": "Prezzo €",
+        "type": "number",
+        "min": 0
+      },
+      "marketing_status": {
+        "label": "Stato commerciale",
+        "type": "select",
+        "options": [
+          "preparazione",
+          "in vendita",
+          "in affitto",
+          "in trattativa",
+          "venduto",
+          "locato"
+        ]
+      }
+    }
+  },
+  "activities": {
+    "label": "WPS",
+    "singular": "attività WPS",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "agent_id": {
+        "label": "Agente",
+        "type": "ref",
+        "entity": "members",
+        "required": true
+      },
+      "activity_type": {
+        "label": "Attività",
+        "type": "select",
+        "options": [
+          "chiamata",
+          "richiamo",
+          "porta a porta",
+          "censimento",
+          "acquisizione",
+          "appuntamento proprietario",
+          "visita acquirente",
+          "trattativa",
+          "follow-up"
+        ]
+      },
+      "priority": {
+        "label": "Priorità",
+        "type": "select",
+        "options": [
+          "normale",
+          "bassa",
+          "alta",
+          "urgente"
+        ]
+      },
+      "starts_at": {
+        "label": "Inizio attività",
+        "type": "datetime-local",
+        "required": true
+      },
+      "due_at": {
+        "label": "Fine attività",
+        "type": "datetime-local",
+        "required": true
+      },
+      "status": {
+        "label": "Avanzamento",
+        "type": "select",
+        "options": [
+          "pianificata",
+          "in corso",
+          "completata",
+          "non completata",
+          "annullata"
+        ]
+      },
+      "goal": {
+        "label": "Obiettivo (quantità)",
+        "type": "number",
+        "min": 1,
+        "integer": true,
+        "default": 1
+      },
+      "progress": {
+        "label": "Quantità svolta",
+        "type": "number",
+        "min": 0,
+        "integer": true
+      },
+      "outcome": {
+        "label": "Esito del lavoro",
+        "type": "textarea"
+      },
+      "next_action": {
+        "label": "Prossima azione",
+        "type": "text"
+      },
+      "street_id": {
+        "label": "Via",
+        "type": "ref",
+        "entity": "streets",
+        "required": false
+      },
+      "building_id": {
+        "label": "Stabile",
+        "type": "ref",
+        "entity": "buildings",
+        "required": false
+      },
+      "unit_id": {
+        "label": "Appartamento",
+        "type": "ref",
+        "entity": "units",
+        "required": false
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "property_id": {
+        "label": "Immobile in gestione",
+        "type": "ref",
+        "entity": "properties",
+        "required": false
+      }
+    }
+  },
+  "appointments": {
+    "label": "Agenda appuntamenti",
+    "singular": "appuntamento",
+    "fields": {
+      "meeting_mode": {
+        "label": "Modalità incontro",
+        "type": "select",
+        "options": [
+          "in presenza",
+          "videocall",
+          "telefono"
+        ]
+      },
+      "video_provider": {
+        "label": "Servizio videocall",
+        "type": "select",
+        "options": [
+          "",
+          "Google Meet",
+          "Calendly",
+          "Link esterno"
+        ]
+      },
+      "meeting_url": {
+        "label": "Link videocall (HTTPS)",
+        "type": "text",
+        "max": 2000
+      },
+      "appointment_type": {
+        "label": "Tipo di appuntamento",
+        "type": "select",
+        "options": [
+          "1ª visita immobile",
+          "2ª visita immobile",
+          "servizio fotografico immobile",
+          "appuntamento con proprietario",
+          "altro"
+        ]
+      },
+      "title": {
+        "label": "Nome / titolo (facoltativo)",
+        "type": "text",
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "agent_id": {
+        "label": "Agente",
+        "type": "ref",
+        "entity": "members",
+        "required": true
+      },
+      "activity_id": {
+        "label": "Attività WPS collegata",
+        "type": "ref",
+        "entity": "activities",
+        "required": false
+      },
+      "starts_at": {
+        "label": "Inizio",
+        "type": "datetime-local",
+        "required": true
+      },
+      "ends_at": {
+        "label": "Fine",
+        "type": "datetime-local",
+        "required": true
+      },
+      "status": {
+        "label": "Stato appuntamento",
+        "type": "select",
+        "options": [
+          "da confermare",
+          "confermato",
+          "effettuato",
+          "riprogrammato",
+          "saltato",
+          "annullato"
+        ]
+      },
+      "commercial_outcome": {
+        "label": "Esito commerciale",
+        "type": "select",
+        "options": [
+          "",
+          "positivo",
+          "negativo",
+          "da valutare"
+        ]
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "property_id": {
+        "label": "Immobile",
+        "type": "ref",
+        "entity": "properties",
+        "required": false
+      }
+    }
+  },
+  "unit_contacts": {
+    "label": "Persone dell’appartamento",
+    "singular": "collegamento persona",
+    "fields": {
+      "title": {
+        "label": "Descrizione (facoltativa)",
+        "type": "text"
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "unit_id": {
+        "label": "Appartamento",
+        "type": "ref",
+        "entity": "units",
+        "required": true
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "relationship": {
+        "label": "Relazione con l’appartamento",
+        "type": "select",
+        "options": [
+          "proprietario",
+          "comproprietario",
+          "inquilino",
+          "occupante",
+          "delegato",
+          "altro interlocutore"
+        ]
+      }
+    }
+  },
+  "contact_methods": {
+    "label": "Recapiti e social",
+    "singular": "recapito",
+    "fields": {
+      "title": {
+        "label": "Etichetta (facoltativa)",
+        "type": "text"
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "phone_kind": {
+        "label": "Tipo di numero",
+        "type": "select",
+        "options": [
+          "",
+          "Ufficio",
+          "Casa",
+          "Cell personale",
+          "Cell di lavoro"
+        ]
+      },
+      "method_type": {
+        "label": "Tipo di recapito",
+        "type": "select",
+        "options": [
+          "telefono",
+          "email",
+          "WhatsApp",
+          "Facebook",
+          "Instagram",
+          "LinkedIn",
+          "altro social",
+          "altro recapito"
+        ]
+      },
+      "value": {
+        "label": "Numero, indirizzo o profilo",
+        "type": "text",
+        "required": true,
+        "max": 400
+      }
+    }
+  },
+  "contact_interactions": {
+    "label": "Storico contatti",
+    "singular": "contatto effettuato",
+    "fields": {
+      "title": {
+        "label": "Titolo (facoltativo)",
+        "type": "text"
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "street_id": {
+        "label": "Via",
+        "type": "ref",
+        "entity": "streets",
+        "required": false
+      },
+      "building_id": {
+        "label": "Civico",
+        "type": "ref",
+        "entity": "buildings",
+        "required": false
+      },
+      "unit_id": {
+        "label": "Appartamento",
+        "type": "ref",
+        "entity": "units",
+        "required": false
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "channel": {
+        "label": "Canale",
+        "type": "select",
+        "options": [
+          "chiamata",
+          "telemarketing",
+          "porta a porta",
+          "email",
+          "WhatsApp",
+          "social",
+          "altro"
+        ]
+      },
+      "occurred_at": {
+        "label": "Data e ora del contatto",
+        "type": "datetime-local",
+        "required": true
+      },
+      "outcome": {
+        "label": "Esito",
+        "type": "select",
+        "options": [
+          "da richiamare",
+          "non risponde",
+          "interessato",
+          "non interessato",
+          "in vendita",
+          "non in vendita",
+          "in affitto",
+          "informazioni aggiornate",
+          "altro"
+        ]
+      },
+      "next_action": {
+        "label": "Prossima azione",
+        "type": "text"
+      },
+      "follow_up_at": {
+        "label": "Richiamare il",
+        "type": "datetime-local"
+      }
+    }
+  },
+  "buyer_profiles": {
+    "label": "Esigenze acquirenti",
+    "singular": "esigenza acquirente",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "contact_id": {
+        "label": "Acquirente",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "assigned_agent_id": {
+        "label": "Agente assegnato",
+        "type": "ref",
+        "entity": "members",
+        "required": false,
+        "default": ""
+      },
+      "budget_min": {
+        "label": "Budget minimo €",
+        "type": "number",
+        "min": 0
+      },
+      "budget_max": {
+        "label": "Budget massimo €",
+        "type": "number",
+        "min": 0
+      },
+      "preferred_areas": {
+        "label": "Zone preferite",
+        "type": "text",
+        "max": 1000
+      },
+      "min_area": {
+        "label": "Superficie minima m²",
+        "type": "number",
+        "min": 0
+      },
+      "min_rooms": {
+        "label": "Locali minimi",
+        "type": "number",
+        "min": 0,
+        "integer": true
+      },
+      "preferred_floor": {
+        "label": "Piano preferito",
+        "type": "text"
+      },
+      "needs_garage": {
+        "label": "Garage richiesto",
+        "type": "checkbox"
+      },
+      "operation_type": {
+        "label": "Operazione",
+        "type": "select",
+        "options": [
+          "vendita",
+          "locazione",
+          "indifferente"
+        ]
+      },
+      "requirements": {
+        "label": "Altre caratteristiche",
+        "type": "textarea",
+        "max": 2000
+      },
+      "status": {
+        "label": "Stato ricerca",
+        "type": "select",
+        "options": [
+          "attiva",
+          "in pausa",
+          "soddisfatta",
+          "archiviata"
+        ]
+      }
+    }
+  },
+  "viewing_feedback": {
+    "label": "Esiti e feedback visite",
+    "singular": "feedback visita",
+    "fields": {
+      "title": {
+        "label": "Titolo (facoltativo)",
+        "type": "text",
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "appointment_id": {
+        "label": "Appuntamento",
+        "type": "ref",
+        "entity": "appointments",
+        "required": true
+      },
+      "contact_id": {
+        "label": "Acquirente",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "property_id": {
+        "label": "Immobile visitato",
+        "type": "ref",
+        "entity": "properties",
+        "required": true
+      },
+      "agent_id": {
+        "label": "Agente",
+        "type": "ref",
+        "entity": "members",
+        "required": true
+      },
+      "visited_at": {
+        "label": "Data visita",
+        "type": "datetime-local",
+        "required": true
+      },
+      "outcome": {
+        "label": "Esito",
+        "type": "select",
+        "options": [
+          "positivo",
+          "negativo",
+          "da valutare"
+        ]
+      },
+      "liked": {
+        "label": "Cosa è piaciuto",
+        "type": "textarea",
+        "max": 2000
+      },
+      "disliked": {
+        "label": "Cosa non è piaciuto",
+        "type": "textarea",
+        "max": 2000
+      },
+      "rejection_reason": {
+        "label": "Motivo di rifiuto",
+        "type": "text",
+        "max": 1000
+      },
+      "second_visit": {
+        "label": "Seconda visita",
+        "type": "select",
+        "options": [
+          "da valutare",
+          "sì",
+          "no"
+        ]
+      },
+      "follow_up_at": {
+        "label": "Richiamare il",
+        "type": "datetime-local"
+      },
+      "preference_update": {
+        "label": "Preferenze da confermare con l’agente",
+        "type": "textarea",
+        "max": 1500
+      }
+    }
+  },
+  "deals": {
+    "label": "Trattative",
+    "singular": "trattativa",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "property_id": {
+        "label": "Immobile",
+        "type": "ref",
+        "entity": "properties",
+        "required": true
+      },
+      "contact_id": {
+        "label": "Cliente",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "assigned_agent_id": {
+        "label": "Agente responsabile",
+        "type": "ref",
+        "entity": "members",
+        "required": false,
+        "default": ""
+      },
+      "stage": {
+        "label": "Fase",
+        "type": "select",
+        "options": [
+          "valutazione",
+          "acquisizione",
+          "incarico",
+          "visite",
+          "proposta",
+          "controproposta",
+          "preliminare",
+          "rogito",
+          "conclusa",
+          "persa"
+        ]
+      },
+      "deal_type": {
+        "label": "Operazione",
+        "type": "select",
+        "options": [
+          "vendita",
+          "locazione"
+        ]
+      },
+      "expected_value": {
+        "label": "Valore previsto €",
+        "type": "number",
+        "min": 0
+      },
+      "next_deadline": {
+        "label": "Prossima scadenza",
+        "type": "date"
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "aperta",
+          "in attesa",
+          "vinta",
+          "persa",
+          "annullata"
+        ]
+      }
+    }
+  },
+  "offers": {
+    "label": "Proposte e controproposte",
+    "singular": "proposta",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "deal_id": {
+        "label": "Trattativa",
+        "type": "ref",
+        "entity": "deals",
+        "required": true
+      },
+      "contact_id": {
+        "label": "Proponente",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "amount": {
+        "label": "Importo offerto €",
+        "type": "number",
+        "min": 0,
+        "required": true
+      },
+      "deposit": {
+        "label": "Caparra €",
+        "type": "number",
+        "min": 0
+      },
+      "offer_type": {
+        "label": "Tipo",
+        "type": "select",
+        "options": [
+          "proposta",
+          "controproposta"
+        ]
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "bozza",
+          "presentata",
+          "accettata",
+          "rifiutata",
+          "scaduta",
+          "ritirata"
+        ]
+      },
+      "valid_until": {
+        "label": "Valida fino al",
+        "type": "date"
+      },
+      "conditions": {
+        "label": "Condizioni",
+        "type": "textarea",
+        "max": 3000
+      }
+    }
+  },
+  "valuations": {
+    "label": "Valutazioni",
+    "singular": "valutazione",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "property_id": {
+        "label": "Immobile",
+        "type": "ref",
+        "entity": "properties",
+        "required": true
+      },
+      "contact_id": {
+        "label": "Proprietario",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "agent_id": {
+        "label": "Agente",
+        "type": "ref",
+        "entity": "members",
+        "required": true
+      },
+      "assessed_on": {
+        "label": "Data valutazione",
+        "type": "date",
+        "required": true
+      },
+      "low_value": {
+        "label": "Valore minimo €",
+        "type": "number",
+        "min": 0
+      },
+      "high_value": {
+        "label": "Valore massimo €",
+        "type": "number",
+        "min": 0
+      },
+      "market_price_m2": {
+        "label": "Valore medio €/m²",
+        "type": "number",
+        "min": 0
+      },
+      "source": {
+        "label": "Fonte dei comparabili",
+        "type": "text",
+        "max": 1000
+      },
+      "limitations": {
+        "label": "Limiti e ipotesi",
+        "type": "textarea",
+        "max": 2000
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "bozza",
+          "condivisa",
+          "approvata",
+          "archiviata"
+        ]
+      }
+    }
+  },
+  "leases": {
+    "label": "Locazioni e contratti",
+    "singular": "locazione",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note e condizioni",
+        "type": "textarea",
+        "max": 4000
+      },
+      "property_id": {
+        "label": "Immobile",
+        "type": "ref",
+        "entity": "properties",
+        "required": true
+      },
+      "tenant_contact_id": {
+        "label": "Conduttore",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "owner_contact_id": {
+        "label": "Proprietario",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "rent_monthly": {
+        "label": "Canone mensile €",
+        "type": "number",
+        "min": 0
+      },
+      "deposit": {
+        "label": "Cauzione €",
+        "type": "number",
+        "min": 0
+      },
+      "starts_on": {
+        "label": "Decorrenza",
+        "type": "date"
+      },
+      "ends_on": {
+        "label": "Scadenza",
+        "type": "date"
+      },
+      "renewal_on": {
+        "label": "Promemoria rinnovo",
+        "type": "date"
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "in preparazione",
+          "attiva",
+          "in rinnovo",
+          "disdetta",
+          "conclusa"
+        ]
+      }
+    }
+  },
+  "commissions": {
+    "label": "Provvigioni",
+    "singular": "provvigione",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "deal_id": {
+        "label": "Trattativa",
+        "type": "ref",
+        "entity": "deals",
+        "required": true
+      },
+      "agent_id": {
+        "label": "Agente / titolare",
+        "type": "ref",
+        "entity": "members",
+        "required": true
+      },
+      "basis_amount": {
+        "label": "Base di calcolo €",
+        "type": "number",
+        "min": 0
+      },
+      "percentage": {
+        "label": "Percentuale",
+        "type": "number",
+        "min": 0
+      },
+      "agency_share": {
+        "label": "Quota agenzia €",
+        "type": "number",
+        "min": 0
+      },
+      "agent_share": {
+        "label": "Quota agente €",
+        "type": "number",
+        "min": 0
+      },
+      "expected_amount": {
+        "label": "Prevista €",
+        "type": "number",
+        "min": 0
+      },
+      "accrued_amount": {
+        "label": "Maturata €",
+        "type": "number",
+        "min": 0
+      },
+      "invoiced_amount": {
+        "label": "Fatturata €",
+        "type": "number",
+        "min": 0
+      },
+      "collected_amount": {
+        "label": "Incassata €",
+        "type": "number",
+        "min": 0
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "prevista",
+          "maturata",
+          "fatturata",
+          "parzialmente incassata",
+          "incassata"
+        ]
+      }
+    }
+  },
+  "documents": {
+    "label": "Documenti e scadenze",
+    "singular": "documento",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "property_id": {
+        "label": "Immobile",
+        "type": "ref",
+        "entity": "properties",
+        "required": false
+      },
+      "contact_id": {
+        "label": "Persona",
+        "type": "ref",
+        "entity": "contacts",
+        "required": false
+      },
+      "deal_id": {
+        "label": "Trattativa",
+        "type": "ref",
+        "entity": "deals",
+        "required": false
+      },
+      "document_type": {
+        "label": "Tipo documento",
+        "type": "select",
+        "options": [
+          "incarico",
+          "proposta",
+          "controproposta",
+          "contratto",
+          "APE",
+          "planimetria",
+          "documento catastale",
+          "altro"
+        ]
+      },
+      "file_name": {
+        "label": "Nome file",
+        "type": "text",
+        "max": 255
+      },
+      "file_reference": {
+        "label": "Riferimento file protetto",
+        "type": "text",
+        "max": 500
+      },
+      "expires_on": {
+        "label": "Scadenza",
+        "type": "date"
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "da caricare",
+          "disponibile",
+          "scaduto",
+          "archiviato"
+        ]
+      }
+    }
+  },
+  "signature_requests": {
+    "label": "Firme elettroniche",
+    "singular": "richiesta di firma",
+    "fields": {
+      "title": {
+        "label": "Nome / titolo",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      "notes": {
+        "label": "Note",
+        "type": "textarea",
+        "max": 4000
+      },
+      "document_id": {
+        "label": "Documento",
+        "type": "ref",
+        "entity": "documents",
+        "required": true
+      },
+      "signer_contact_id": {
+        "label": "Firmatario",
+        "type": "ref",
+        "entity": "contacts",
+        "required": true
+      },
+      "provider": {
+        "label": "Provider",
+        "type": "select",
+        "options": [
+          "Namirial",
+          "InfoCert",
+          "DocuSign",
+          "Dropbox Sign",
+          "Adobe Acrobat Sign"
+        ]
+      },
+      "signature_level": {
+        "label": "Livello richiesto",
+        "type": "select",
+        "options": [
+          "da definire",
+          "semplice",
+          "avanzata",
+          "qualificata (QES)"
+        ]
+      },
+      "signature_format": {
+        "label": "Formato firmato · PAdES PDF / CAdES P7M",
+        "type": "select",
+        "options": [
+          "Pades",
+          "Cades"
+        ]
+      },
+      "status": {
+        "label": "Stato",
+        "type": "select",
+        "options": [
+          "da configurare",
+          "bozza"
+        ]
+      },
+      "provider_envelope_id": {
+        "label": "Riferimento pratica provider",
+        "type": "text",
+        "max": 200
+      },
+      "sent_at": {
+        "label": "Invio",
+        "type": "datetime-local"
+      },
+      "signed_at": {
+        "label": "Firma completata",
+        "type": "datetime-local"
+      },
+      "expires_at": {
+        "label": "Scadenza richiesta",
+        "type": "datetime-local"
+      },
+      "audit_reference": {
+        "label": "Riferimento audit provider",
+        "type": "text",
+        "max": 500
+      }
+    }
+  }
+}

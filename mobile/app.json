@@ -2,14 +2,11 @@
   "expo": {
     "name": "PRIME",
     "slug": "prime-mobile",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "default",
     "scheme": "prime",
     "userInterfaceStyle": "dark",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "it.primegestionale.mobile",
@@ -20,14 +17,14 @@
     "android": {
       "package": "it.primegestionale.mobile",
       "permissions": [],
-      "blockedPermissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
+      "versionCode": 2
     },
     "plugins": [
       "expo-secure-store",
       "expo-iap",
-      "expo-router"
+      "expo-router",
+      "./plugins/withPrimeIcon.js"
     ]
   }
 }

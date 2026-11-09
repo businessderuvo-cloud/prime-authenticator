@@ -130,6 +130,52 @@ test(
         const changed = await api.plan(plan);
         assert.equal(changed.demo_plan, plan);
       }
+      await api.plan("secret");
+      for (const variant of [
+        "light",
+        "pro",
+        "vip",
+        "elite",
+        "secret",
+        "valentine",
+        "halloween",
+        "christmas",
+      ]) {
+        await api.change("/api/preferences", "PATCH", {
+          theme: variant === "light" ? "light" : "dark",
+          theme_variant: variant === "light" ? "" : variant,
+        });
+        const state = await api.me();
+        assert.equal(state.theme_variant, variant === "light" ? "" : variant);
+      }
+      const created = await api.post("/api/entities/streets", {
+        data: {
+          title: "Via test nativo",
+          city: "Milano",
+          census_status: "da censire",
+        },
+      });
+      assert.ok(created.id);
+      const updated = await api.change(
+        "/api/entities/streets/" + created.id,
+        "PUT",
+        {
+          version: created.version,
+          data: {
+            title: "Via test nativo aggiornata",
+            city: "Milano",
+            census_status: "da censire",
+          },
+        },
+      );
+      assert.equal(updated.title, "Via test nativo aggiornata");
+      const connect = await api.get("/api/connect");
+      assert.ok(Array.isArray(connect.providers));
+      const accounts = await api.get("/api/connect/wallester");
+      assert.equal(accounts.simulation, true);
+      assert.ok(accounts.accounts.length > 0);
+      const movements = await api.get("/api/connect/wallester/movements");
+      assert.ok(movements.transactions.length > 0);
     } finally {
       await api.logout();
     }

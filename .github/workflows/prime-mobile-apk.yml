@@ -55,7 +55,7 @@ jobs:
           NODE_ENV: production
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --console=plain
+          ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process --console=plain
       - name: Verify signature, package and embedded application
         run: |
           set -eu
@@ -64,11 +64,27 @@ jobs:
           "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.mobile'"
           unzip -l "$apk" | grep -F 'assets/index.android.bundle'
           mkdir -p release
-          cp "$apk" release/PRIME-Mobile-Android-v0.1.0.apk
-          (cd release && sha256sum PRIME-Mobile-Android-v0.1.0.apk > SHA256SUMS.txt)
-      - uses: actions/upload-artifact@v4
+          cp "$apk" release/PRIME-Mobile-Android-v0.2.0.apk
+          (cd release && sha256sum PRIME-Mobile-Android-v0.2.0.apk > SHA256SUMS.txt)
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test native mobile screens on Android
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          name: PRIME-Mobile-Android-v0.1.0
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: cd mobile && python3 tests/android-smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PRIME-Mobile-Android-v0.2.0
           path: mobile/release/*
           if-no-files-found: error
           retention-days: 30
@@ -77,18 +93,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=mobile-android-v0.1.0
+          tag=mobile-android-v0.2.0
           cat > release/notes.md <<'NOTES'
           Prima versione di prova di PRIME Mobile per Android 64 bit (arm64).
 
-          App nativa React Native: nessuna WebView del gestionale, nessun Expo Go necessario. Include logo PRIME, switch Demo/Live, demo pubblica senza password, consultazione di immobili/contatti/agenda e collegamento ai percorsi di accesso e KYB esistenti. La raccolta dei documenti KYB apre il servizio esterno.
+          App nativa React Native: nessuna WebView del gestionale, nessun Expo Go necessario. Include icona di avvio con logo originale, menu completo, icone del sito, temi e selettore piani, schede modificabili, territorio, mappa nativa, PRIME Connect e dati Wallester dimostrativi. La raccolta dei documenti KYB apre il servizio esterno.
 
           Gli acquisti non sono ancora attivi: sono necessari account store, prodotti e verifica server dei pagamenti. Non comprende ancora tutte le funzioni del gestionale. APK di prova firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play.
 
           L’app Authenticator già presente nel repository rimane separata e le sue release non vengono modificate.
           NOTES
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" release/PRIME-Mobile-Android-v0.1.0.apk release/SHA256SUMS.txt --clobber
+            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.0.apk release/SHA256SUMS.txt release/*.png --clobber
           else
-            gh release create "$tag" release/PRIME-Mobile-Android-v0.1.0.apk release/SHA256SUMS.txt --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.1.0 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
+            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.0.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.0 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
           fi

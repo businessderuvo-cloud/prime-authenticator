@@ -10,6 +10,8 @@ export type Me = {
   demo_plan?: string;
   edition: string;
   customer_demo?: boolean;
+  theme?: string;
+  theme_variant?: string;
 };
 export type Row = { id: string; title: string; [key: string]: unknown };
 export type Challenge = {
@@ -166,6 +168,9 @@ export class PrimeApi {
   }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>(path, "POST", body);
+  }
+  change<T>(path: string, method: string, body: unknown = {}) {
+    return this.request<T>(path, method, body);
   }
   async plan(plan: string) {
     await this.post("/api/customer-demo/plan", { plan });

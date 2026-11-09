@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import Workspace from "./src/Workspace";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
@@ -141,11 +142,14 @@ function Field({
   );
 }
 function AppContent() {
+  const [legacy, setLegacy] = useState(false);
   const [mode, setMode] = useState<Mode>("demo");
   const [me, setMe] = useState<Me | null>(null);
-  const params = useLocalSearchParams<{tab?: string}>();
-  const tab: Tab = tabs.includes(params.tab as Tab) ? params.tab as Tab : "Home";
-  const setTab = (next: Tab) => router.setParams({tab: next});
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const tab: Tab = tabs.includes(params.tab as Tab)
+    ? (params.tab as Tab)
+    : "Home";
+  const setTab = (next: Tab) => router.setParams({ tab: next });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
@@ -375,6 +379,25 @@ function AppContent() {
     setRows([]);
     await load(next);
   }
+  if (me && !legacy)
+    return (
+      <Workspace
+        me={me}
+        api={api}
+        mode={mode}
+        onMe={setMe}
+        onMode={switchMode}
+        onLegacy={(next) => {
+          setLegacy(true);
+          void run(() => navigate(next));
+        }}
+        onLogout={async () => {
+          await api.logout();
+          setMe(null);
+          setLegacy(false);
+        }}
+      />
+    );
   const list = rows.filter((row) =>
     Object.values(row).some(
       (v) =>
@@ -390,6 +413,13 @@ function AppContent() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={s.header}>
+          {legacy && me && (
+            <Button
+              title="← Torna al workspace"
+              secondary
+              onPress={() => setLegacy(false)}
+            />
+          )}
           <View style={s.brand}>
             <Image
               source={require("./assets/prime-logo.png")}
