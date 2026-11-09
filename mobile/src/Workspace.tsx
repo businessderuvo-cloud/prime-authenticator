@@ -412,6 +412,7 @@ export default function Workspace({
     [dashboard, setDashboard] = useState<Record<string, unknown>>({}),
     [connection, setConnection] = useState<Record<string, unknown>>({});
   const [demoServices, setDemoServices] = useState<string[]>([]);
+  const [pendingDemoPage, setPendingDemoPage] = useState("");
   const [liveServiceReady, setLiveServiceReady] = useState<
     Record<string, boolean>
   >({});
@@ -755,9 +756,22 @@ export default function Workspace({
         : current.filter((service) => service !== id),
     );
     const target = providerServicePage[id];
-    if (enabled && target) nav(target);
+    if (enabled && target) setPendingDemoPage(target);
     else if (!enabled && providerPageService[page] === id) nav("connect");
   };
+  useEffect(() => {
+    if (
+      pendingDemoPage &&
+      demoServices.includes(providerPageService[pendingDemoPage])
+    ) {
+      const target = pendingDemoPage;
+      const timer = setTimeout(() => {
+        nav(target);
+        setPendingDemoPage("");
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [demoServices, pendingDemoPage]);
   useEffect(() => {
     let active = true;
     const loadConnectionStatus = async () => {
