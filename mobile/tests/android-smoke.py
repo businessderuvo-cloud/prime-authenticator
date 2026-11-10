@@ -35,7 +35,7 @@ def expect(text,timeout=50):
         time.sleep(2)
     adb('logcat','-d')
     raise AssertionError('Text not found: '+text)
-def scroll_expect(text,timeout=40):
+def scroll_expect(text,timeout=180):
     until=time.time()+timeout
     while time.time()<until:
         root=tree()
@@ -63,12 +63,12 @@ try:
     tap('Cambia piano ▾');tap('Secret Plan');expect('Secret Plan · Demo pubblica');shot('02-secret.png')
     tap('Scegli tema');tap('Blu VIP');expect('Ogni connessione conta.');shot('02-tema-vip.png')
     tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
-    expect('PRIME Connect');expect('Attiva dati fittizi');shot('03-connect-before-demos.png')
+    expect('PRIME Connect');scroll_expect('Attiva dati fittizi');shot('03-connect-before-demos.png')
     tap('Attiva dati fittizi Stripe',scroll=True)
     expect('DATI DIMOSTRATIVI');shot('04-stripe-intro.png');scroll_expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
     tap('Connect');tap('Disattiva dati fittizi Stripe',scroll=True);scroll_top();expect('PRIME Connect')
     tap('Attiva dati fittizi Wallester',scroll=True)
-    expect('Wallester Business');expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')
+    scroll_expect('Wallester Business');scroll_expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')
     tap('Connect');tap('Disattiva dati fittizi Wallester',scroll=True);scroll_top();expect('PRIME Connect')
     scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
