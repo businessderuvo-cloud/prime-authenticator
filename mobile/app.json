@@ -2,7 +2,7 @@
   "expo": {
     "name": "PRIME",
     "slug": "prime-mobile",
-    "version": "0.2.10",
+    "version": "0.2.11",
     "orientation": "default",
     "scheme": "prime",
     "icon": "./assets/prime-icon.png",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "it.primegestionale.mobile",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "PRIME usa il microfono quando avvii una conversazione vocale con Vanessa.",
@@ -33,7 +33,7 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "versionCode": 12
+      "versionCode": 13
     },
     "plugins": [
       "expo-secure-store",

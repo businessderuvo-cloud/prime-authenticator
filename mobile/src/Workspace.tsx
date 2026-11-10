@@ -467,9 +467,11 @@ export default function Workspace({
     fn: () => void,
     primary = false,
     disabled = false,
+    accessibilityLabel?: string,
   ) => (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       disabled={busy || disabled}
       onPress={fn}
       style={[
@@ -1380,6 +1382,8 @@ export default function Workspace({
                                 () =>
                                   toggleDemoService(id, !isActiveDemo),
                                 !isActiveDemo,
+                                false,
+                                `${isActiveDemo ? "Disattiva" : "Attiva"} dati fittizi ${name}`,
                               )
                             : demo && servicePage
                               ? button(
