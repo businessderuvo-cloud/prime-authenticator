@@ -77,7 +77,7 @@ try:
     tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
     expect('PRIME Connect');expect('Attiva dati fittizi')
     tap_in_card('Stripe','Attiva dati fittizi')
-    expect('DATI DIMOSTRATIVI');expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
+    expect('DATI DIMOSTRATIVI');shot('04-stripe-intro.png');scroll_expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
     tap('Disattiva dati fittizi',scroll=True);expect('PRIME Connect');scroll_top()
     tap_in_card('Wallester','Attiva dati fittizi')
     expect('Wallester Business');expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')

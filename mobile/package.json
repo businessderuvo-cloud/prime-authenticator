@@ -1,6 +1,6 @@
 {
   "name": "prime-mobile",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "main": "expo-router/entry",
   "dependencies": {
     "@config-plugins/react-native-webrtc": "^15.0.2",
