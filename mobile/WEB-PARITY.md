@@ -1,4 +1,4 @@
-# PRIME Mobile · stato versione 0.2.6 (build 8)
+# PRIME Mobile · stato versione 0.2.7 (build 9)
 
 Questa versione amplia la ricostruzione nativa del gestionale. È React Native, non usa una WebView e omette il browser assistito. La consegna è una build di verifica: la parità completa non è ancora dimostrata su telefono e non va presentata come completata.
 
@@ -23,7 +23,8 @@ Questa versione amplia la ricostruzione nativa del gestionale. È React Native, 
 - Test di integrazione sulla demo pubblica completato: accesso anonimo, cambio dei cinque piani, temi, lettura/creazione/aggiornamento di dati dimostrativi, Connect e Wallester.
 - Test Copilot automatizzati: isolamento della sessione demo/live, consenso, trascrizione e rilascio delle risorse.
 - La compilazione locale Windows non ha prodotto l’APK: il task di `react-native-audio-api` avvia uno script POSIX che, in questa installazione Git Bash, non trova `dirname`, `mkdir` e `rm`. La pipeline Linux GitHub è il percorso di build configurato.
-- Emulatore Android o telefono fisico non ancora verificato in questa macchina.
+- La build 0.2.6 ha superato compilazione e firma. Il test emulatore ha mostrato Wallester dopo un tap generico su “Attiva dati fittizi”, mentre il test cercava la scritta demo Stripe. Il test è stato reso specifico per il provider e ora visita sia Stripe sia Wallester; la build 0.2.7 deve ancora passare l’emulatore.
+- Telefono fisico/iPhone non verificati.
 
 ## Requisiti prima della dicitura “parità completa”
 

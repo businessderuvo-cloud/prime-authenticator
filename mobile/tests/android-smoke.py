@@ -19,6 +19,24 @@ def tap(label,timeout=50,scroll=False):
         if scroll: adb('shell','input','swipe','540','1600','540','600','400')
         time.sleep(2)
     raise AssertionError('Control not found: '+label)
+def tap_in_card(title,action,timeout=50):
+    until=time.time()+timeout
+    while time.time()<until:
+        root=tree();parents={child:parent for parent in root.iter() for child in parent}
+        for target in root.iter('node'):
+            if target.get('text')!=title or target.get('visible-to-user','true')!='true': continue
+            ancestor=target
+            while ancestor in parents:
+                ancestor=parents[ancestor]
+                controls=[node for node in ancestor.iter('node') if node.get('text')==action and node.get('visible-to-user','true')=='true']
+                if controls:
+                    bounds=controls[0].get('bounds').replace('][',',').replace('[','').replace(']','').split(',')
+                    x1,y1,x2,y2=map(int,bounds)
+                    if x2>x1 and y2>y1 and x2<=1080 and y2<=1920:
+                        adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));return
+                    break
+        adb('shell','input','swipe','540','1600','540','600','400');time.sleep(1)
+    raise AssertionError('Control not found in '+title+' card: '+action)
 def expect(text,timeout=50):
     until=time.time()+timeout
     while time.time()<until:
@@ -58,8 +76,11 @@ try:
     tap('Scegli tema');tap('Blu VIP');expect('Ogni connessione conta.');shot('02-tema-vip.png')
     tap('Apri menu');expect('CRM · Persone');shot('03-menu.png');tap('PRIME Connect',scroll=True)
     expect('PRIME Connect');expect('Attiva dati fittizi')
-    tap('Attiva dati fittizi',scroll=True)
-    expect('Dati dimostrativi');shot('04-stripe-demo.png')
+    tap_in_card('Stripe','Attiva dati fittizi')
+    expect('DATI DIMOSTRATIVI');expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
+    tap('Disattiva dati fittizi',scroll=True);expect('PRIME Connect');scroll_top()
+    tap_in_card('Wallester','Attiva dati fittizi')
+    expect('Wallester Business');expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')
     tap('Disattiva dati fittizi',scroll=True);expect('PRIME Connect');scroll_top()
     scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
