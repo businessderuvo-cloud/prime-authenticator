@@ -1,4 +1,4 @@
-# PRIME Mobile · stato versione 0.2.8 (build 10)
+# PRIME Mobile · stato versione 0.2.9 (build 11)
 
 Questa versione amplia la ricostruzione nativa del gestionale. È React Native, non usa una WebView e omette il browser assistito. La consegna è una build di verifica: la parità completa non è ancora dimostrata su telefono e non va presentata come completata.
 
@@ -23,7 +23,7 @@ Questa versione amplia la ricostruzione nativa del gestionale. È React Native, 
 - Test di integrazione sulla demo pubblica completato: accesso anonimo, cambio dei cinque piani, temi, lettura/creazione/aggiornamento di dati dimostrativi, Connect e Wallester.
 - Test Copilot automatizzati: isolamento della sessione demo/live, consenso, trascrizione e rilascio delle risorse.
 - La compilazione locale Windows non ha prodotto l’APK: il task di `react-native-audio-api` avvia uno script POSIX che, in questa installazione Git Bash, non trova `dirname`, `mkdir` e `rm`. La pipeline Linux GitHub è il percorso di build configurato.
-- La build 0.2.6 ha superato compilazione e firma. Il test emulatore ha mostrato Wallester dopo un tap generico su “Attiva dati fittizi”, mentre il test cercava la scritta demo Stripe. Nella 0.2.7 la selezione emulatore ha attivato Stripe correttamente; il controllo cercava il titolo del grafico senza scorrere. La 0.2.8 aggiunge lo scorrimento prima di verificare il contenuto finanziario e continua a visitare anche Wallester.
+- Le build 0.2.6, 0.2.7 e 0.2.8 hanno superato compilazione e firma. La 0.2.6 aveva un tap demo ambiguo; la 0.2.7 ha confermato l’attivazione Stripe e individuato che il test non scorreva fino al grafico; la 0.2.8 corregge lo scroll. Il suo test emulatore si è però interrotto prima di aprire l’app perché UiAutomator ha restituito un root node vuoto; la 0.2.9 ritenta il dump gerarchia prima di segnare il test come fallito.
 - Telefono fisico/iPhone non verificati.
 
 ## Requisiti prima della dicitura “parità completa”

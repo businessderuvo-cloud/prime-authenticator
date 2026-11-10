@@ -2,8 +2,14 @@ import subprocess,time,xml.etree.ElementTree as ET,pathlib
 out=pathlib.Path('release');out.mkdir(exist_ok=True)
 def adb(*args): return subprocess.check_output(['adb',*args])
 def tree():
-    adb('shell','uiautomator','dump','/sdcard/prime-ui.xml')
-    return ET.fromstring(adb('shell','cat','/sdcard/prime-ui.xml'))
+    last=None
+    for attempt in range(10):
+        try:
+            adb('shell','uiautomator','dump','/sdcard/prime-ui.xml')
+            return ET.fromstring(adb('shell','cat','/sdcard/prime-ui.xml'))
+        except (subprocess.CalledProcessError,ET.ParseError) as error:
+            last=error;time.sleep(1)
+    raise AssertionError('Android UI hierarchy did not become available') from last
 def tap(label,timeout=50,scroll=False):
     until=time.time()+timeout
     while time.time()<until:
