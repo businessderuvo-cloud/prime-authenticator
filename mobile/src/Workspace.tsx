@@ -25,6 +25,7 @@ import brand from "./brand.json";
 import providerLogos from "./provider-logos.json";
 import NativeMap from "./NativeMap";
 import Vanessa from "./Vanessa";
+import VanessaOperations from "./VanessaOperations";
 import SecuritySettings from "./SecuritySettings";
 import { useConversation } from "@elevenlabs/react-native";
 import { metricValue } from "./site-metrics";
@@ -1584,6 +1585,7 @@ export default function Workspace({
         )}
         <View style={{ display: page === "assistant" ? "flex" : "none", gap: 14 }}>
           <Vanessa api={api} colors={c} allowed={rank >= 2} />
+          {page === "assistant" && rank >= 2 && <VanessaOperations api={api} colors={c} owner={me.role === "owner"} />}
         </View>
         {page === "security" && <SecuritySettings key={mode} api={api} mode={mode} colors={c} />}
         {page === "upgrade" && (
