@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useEffectEvent } from "react";
+import React, { useState, useEffect, useEffectEvent, useRef } from "react";
 import {
   View,
   Text,
@@ -407,6 +407,7 @@ export default function Workspace({
   const voiceSession = useConversation();
   const params = useLocalSearchParams<{ page?: string }>();
   const page = params.page || "dashboard";
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
   const plan =
     me.demo_plan || { base: "standard", full: "pro" }[me.edition] || me.edition;
   const rank = Math.max(0, ranks.indexOf(plan));
@@ -786,6 +787,9 @@ export default function Workspace({
     }
   }, [demoServices, pendingDemoPage]);
   useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [page]);
+  useEffect(() => {
     let active = true;
     const loadConnectionStatus = async () => {
       const base = await api
@@ -1013,6 +1017,7 @@ export default function Workspace({
         </View>
       )}
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         refreshControl={
