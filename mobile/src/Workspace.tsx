@@ -27,6 +27,11 @@ import NativeMap from "./NativeMap";
 import Vanessa from "./Vanessa";
 import VanessaOperations from "./VanessaOperations";
 import SecuritySettings from "./SecuritySettings";
+import StripeWorkspace, {
+  type StripeDemoCard,
+  type StripeDemoLedger,
+} from "./StripeWorkspace";
+import WallesterWorkspace from "./WallesterWorkspace";
 import { useConversation } from "@elevenlabs/react-native";
 import { metricValue } from "./site-metrics";
 type Field = {
@@ -119,12 +124,12 @@ const palettes: Record<
     accent: "#f5a04f",
   },
   christmas: {
-    bg: "#080606",
-    panel: "#1b0808",
-    line: "#8a2020",
-    text: "#fff0ed",
-    muted: "#ddbab6",
-    accent: "#ff5757",
+    bg: "#080a08",
+    panel: "#141b14",
+    line: "#354535",
+    text: "#f4f2e8",
+    muted: "#b9bfaf",
+    accent: "#d3b978",
   },
 };
 const themeNames: Record<string, string> = {
@@ -145,7 +150,7 @@ const themeDetails: Record<string, string> = {
   secret: "Nero e oro",
   valentine: "Nero e viola · 14 febbraio",
   halloween: "Nero e arancione · 31 ottobre",
-  christmas: "Nero e rosso scuro · 21–30 dicembre",
+  christmas: "Verde bosco e oro · 21–30 dicembre",
 };
 const monthNames = [
   "Gennaio",
@@ -349,29 +354,6 @@ const demoProviderSamples: Record<
     rows: ["Planimetria immobile.pdf · Demo", "Documenti cliente.zip · Demo"],
   },
 };
-const stripeDemoPayments = [
-  {
-    date: "09 nov 2026",
-    customer: "Agenzia Aurora · Demo",
-    reason: "Canone gestionale",
-    amount: 149,
-    status: "Riuscito",
-  },
-  {
-    date: "08 nov 2026",
-    customer: "Cliente Casa Verde · Demo",
-    reason: "Consulenza immobiliare",
-    amount: 390,
-    status: "Riuscito",
-  },
-  {
-    date: "07 nov 2026",
-    customer: "Studio Centro · Demo",
-    reason: "Servizio di valutazione",
-    amount: 220,
-    status: "In attesa",
-  },
-];
 const referenceLabel = (rows: Row[], id: unknown) => {
   const row = rows.find((r) => r.id === id);
   return String(row?.title || row?.email || "Seleziona…");
@@ -440,6 +422,15 @@ export default function Workspace({
     [dashboard, setDashboard] = useState<Record<string, unknown>>({}),
     [connection, setConnection] = useState<Record<string, unknown>>({});
   const [demoServices, setDemoServices] = useState<string[]>([]);
+  const [stripeDemoLedger, setStripeDemoLedger] = useState<StripeDemoLedger>({
+    available: 124000,
+    pending: 38000,
+    payouts: [],
+  });
+  const [stripeDemoCards, setStripeDemoCards] = useState<StripeDemoCard[]>([
+    { id: "demo-card-1", name: "Carta amministrazione", last4: "4242", status: "active", limit: 2500 },
+    { id: "demo-card-2", name: "Carta collaboratore", last4: "8126", status: "inactive", limit: 1000 },
+  ]);
   const [pendingDemoPage, setPendingDemoPage] = useState("");
   const [calendarCursor, setCalendarCursor] = useState(() => {
     const today = new Date();
@@ -452,9 +443,7 @@ export default function Workspace({
   const [connectionLoadedMode, setConnectionLoadedMode] =
     useState<Mode | null>(null);
   const connectionLoading = connectionLoadedMode !== mode;
-  const [finance, setFinance] = useState<Row[]>([]),
-    [movements, setMovements] = useState<Row[]>([]),
-    [editing, setEditing] = useState<{
+  const [editing, setEditing] = useState<{
       entity: string;
       row?: Row;
       values: Record<string, unknown>;
@@ -552,19 +541,7 @@ export default function Workspace({
       }));
     } else if (page === "connect" || providerPages.includes(page))
       setConnection(await api.get("/api/connect"));
-    else if (
-      page === "wallester" &&
-      (mode === "live" || demoServices.includes("wallester"))
-    ) {
-      const state = await api.get<{ accounts: Row[] }>(
-        "/api/connect/wallester",
-      );
-      const rows = await api.get<{ transactions: Row[] }>(
-        "/api/connect/wallester/movements?limit=50",
-      );
-      setFinance(state.accounts || []);
-      setMovements(rows.transactions || []);
-    } else if (page === "agents") setData((old) => ({ ...old, agents: [] }));
+    else if (page === "agents") setData((old) => ({ ...old, agents: [] }));
     if (page === "agents") {
       const rows = await api.get<Row[]>("/api/agents");
       setData((old) => ({ ...old, agents: rows }));
@@ -583,8 +560,6 @@ export default function Workspace({
     setData({});
     setConnection({});
     setDashboard({});
-    setFinance([]);
-    setMovements([]);
 
     await run(load);
   });
@@ -761,6 +736,10 @@ export default function Workspace({
     return rank >= 1;
   };
   const pageIsAvailable = (id: string) => {
+    if (
+      id === "wallester" &&
+      (!(["owner", "manager"] as string[]).includes(me.role) || (!demo && rank < 2))
+    ) return false;
     const service = providerPageService[id];
     if (!service) {
       if (["agents", "upgrade"].includes(id) && me.role !== "owner")
@@ -770,6 +749,7 @@ export default function Workspace({
       if (id === "security" && demo) return false;
       return true;
     }
+    if (id === "stripe" && !demo) return liveStripeEnabled;
     if (demo)
       return canUseDemoProvider(service) && demoServices.includes(service);
     return connectionLoadedMode === mode && liveServiceReady[service] === true;
@@ -915,7 +895,7 @@ export default function Workspace({
   useEffect(() => {
     if (
       !connectionLoading &&
-      providerPageService[page] &&
+      (providerPageService[page] || page === "wallester") &&
       !pageAvailability(page)
     )
       router.setParams({ page: "connect" });
@@ -928,6 +908,7 @@ export default function Workspace({
     mode,
     demo,
     me.role,
+    liveStripeEnabled,
   ]);
   const visibleMenuGroups = menuGroups.flatMap((group) => {
     const items = group.items.filter((item, index) => {
@@ -1305,7 +1286,7 @@ export default function Workspace({
               <Text style={styles.muted}>{text(r.role)}</Text>
             </View>
           ))}
-        {(page === "connect" || providerPages.includes(page)) && (
+        {(page === "connect" || (providerPages.includes(page) && !(page === "stripe" && pageIsAvailable("stripe")))) && (
           <>
             <Text style={styles.muted}>
               Collega i tuoi strumenti e prova i dati dimostrativi. Ogni
@@ -1407,7 +1388,7 @@ export default function Workspace({
                                     : "Scegli Secret",
                                   () => setPicker("plan"),
                                 )
-                              : !demo && servicePage && isReadyLive
+                              : !demo && servicePage && (isReadyLive || (id === "stripe" && liveStripeEnabled))
                                 ? button("Apri sezione", () => nav(servicePage))
                                 : !demo
                                   ? button("Verifica stato", () =>
@@ -1469,6 +1450,7 @@ export default function Workspace({
         )}
         {demo &&
           page !== "connect" &&
+          page !== "stripe" &&
           page !== "wallester" &&
           providerPageService[page] &&
           demoServices.includes(providerPageService[page]) && (
@@ -1477,96 +1459,53 @@ export default function Workspace({
                 DEMO · {providerPageService[page].toUpperCase()} · DATI FITTIZI
               </Text>
               <Text style={styles.h2}>
-                {page === "stripe"
-                  ? "Pagamenti dimostrativi"
-                  : demoProviderSamples[providerPageService[page]]?.title ||
-                    "Esempio di integrazione"}
+                {demoProviderSamples[providerPageService[page]]?.title ||
+                  "Esempio di integrazione"}
               </Text>
               <Text style={styles.muted}>
                 Esempi creati nell’app. Non sono stati inviati dati al provider e
                 non rappresentano un collegamento reale.
               </Text>
-              {page === "stripe" ? (
-                <>
-                  <View style={[styles.row, { marginTop: 8 }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.tiny}>Incassato · ultimi 30 giorni</Text>
-                      <Text style={styles.number}>{euro(14820)}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.tiny}>In attesa</Text>
-                      <Text style={styles.number}>{euro(1250)}</Text>
-                    </View>
+              {(demoProviderSamples[providerPageService[page]]?.rows || []).map(
+                (sample) => (
+                  <View key={sample} style={styles.navRow}>
+                    <Icon color={c.accent} name={providerPageService[page]} />
+                    <Text style={[styles.text, { flex: 1 }]}>{sample}</Text>
                   </View>
-                  <FinanceChart color={c.accent} muted={c.muted} />
-                  <Text style={styles.h3}>Pagamenti recenti</Text>
-                  {stripeDemoPayments.map((payment) => (
-                    <View key={payment.customer} style={styles.panel}>
-                      <View style={styles.row}>
-                        <Text style={[styles.h3, { flex: 1 }]}>
-                          {payment.customer}
-                        </Text>
-                        <Text style={styles.h3}>{euro(payment.amount)}</Text>
-                      </View>
-                      <Text style={styles.muted}>
-                        {payment.date} · {payment.reason} · {payment.status}
-                      </Text>
-                    </View>
-                  ))}
-                </>
-              ) : (
-                (demoProviderSamples[providerPageService[page]]?.rows || []).map(
-                  (sample) => (
-                    <View key={sample} style={styles.navRow}>
-                      <Icon color={c.accent} name={providerPageService[page]} />
-                      <Text style={[styles.text, { flex: 1 }]}>{sample}</Text>
-                    </View>
-                  ),
-                )
+                ),
               )}
               {button("Disattiva dati fittizi", () =>
                 toggleDemoService(providerPageService[page], false),
               )}
             </View>
           )}
-        {page === "wallester" && (
+        {page === "stripe" && pageIsAvailable("stripe") && (
           <>
-            <Text style={styles.muted}>
-              {demo
-                ? "DEMO · Dati interamente fittizi del gestionale."
-                : "Conti e movimenti dell’agenzia."}
-            </Text>
-            {finance.map((r) => (
-              <View key={text(r.id)} style={styles.panel}>
-                <Text style={styles.h3}>{text(r.name)}</Text>
-                <Text style={styles.number}>{euro(r.balance)}</Text>
-                <Text style={styles.muted}>
-                  Disponibile {euro(r.available_amount)} ·{" "}
-                  {text(r.currency_code)}
-                </Text>
-              </View>
-            ))}
-            <Text style={styles.h2}>Movimenti</Text>
-            {demo && <FinanceChart color="#49a774" muted={c.muted} />}
-            {movements.map((r, i) => (
-              <View style={styles.panel} key={text(r.record_id || i)}>
-                <Text style={styles.h3}>{text(r.description)}</Text>
-                <Text
-                  style={{
-                    color: Number(r.account_amount) > 0 ? "#49a774" : c.text,
-                  }}
-                >
-                  {euro(r.account_amount)}
-                </Text>
-                <Text style={styles.muted}>
-                  {text(r.record_date)} · {text(r.record_status)}
-                </Text>
-              </View>
-            ))}
-            {demo &&
-              button("Disattiva dati fittizi", () =>
-                toggleDemoService("wallester", false),
-              )}
+            <StripeWorkspace
+              api={api}
+              colors={c}
+              plan={plan}
+              role={me.role}
+              demo={demo}
+              ledger={stripeDemoLedger}
+              cards={stripeDemoCards}
+              onLedger={setStripeDemoLedger}
+              onCards={setStripeDemoCards}
+            />
+            {demo && button("Disattiva dati fittizi", () => toggleDemoService("stripe", false))}
+          </>
+        )}
+        {page === "wallester" && pageIsAvailable("wallester") && (
+          <>
+            <WallesterWorkspace
+              api={api}
+              colors={c}
+              demo={demo}
+              role={me.role}
+              onAnalyze={rank >= 2 ? () => nav("assistant") : undefined}
+              onManageConnection={() => nav("connect")}
+            />
+            {demo && button("Disattiva dati fittizi", () => toggleDemoService("wallester", false))}
           </>
         )}
         {page === "mail" && (
@@ -1584,7 +1523,13 @@ export default function Workspace({
           </>
         )}
         <View style={{ display: page === "assistant" ? "flex" : "none", gap: 14 }}>
-          <Vanessa api={api} colors={c} allowed={rank >= 2} />
+          <Vanessa
+            api={api}
+            colors={c}
+            allowed={rank >= 2}
+            phoneCopilotAllowed={!demo || plan === "secret"}
+            interpreterAllowed={!demo && rank >= 3}
+          />
           {page === "assistant" && rank >= 2 && <VanessaOperations api={api} colors={c} owner={me.role === "owner"} />}
         </View>
         {page === "security" && <SecuritySettings key={mode} api={api} mode={mode} colors={c} />}
@@ -2041,26 +1986,6 @@ export default function Workspace({
     </SafeAreaView>
   );
 }
-function FinanceChart({ color, muted }: { color: string; muted: string }) {
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={{ color: muted, fontSize: 12 }}>DEMO · Andamento ultimi 30 giorni</Text>
-        <Text style={{ color, fontSize: 12, fontWeight: "700" }}>↗ +12,4%</Text>
-      </View>
-      <Svg height={120} width="100%" viewBox="0 0 320 120" preserveAspectRatio="none">
-        <Path d="M0 102H320M0 72H320M0 42H320M0 112L38 95 76 101 114 63 152 76 190 48 228 57 266 25 320 36V120H0Z" fill={color} opacity={0.12} />
-        <Path d="M0 112L38 95 76 101 114 63 152 76 190 48 228 57 266 25 320 36" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </Svg>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        {['1 nov', '8 nov', '15 nov', '22 nov', 'oggi'].map((label) => (
-          <Text key={label} style={{ color: muted, fontSize: 10 }}>{label}</Text>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 function makeStyles(c: typeof palettes.light) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.bg },

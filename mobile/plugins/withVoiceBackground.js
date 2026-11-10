@@ -6,9 +6,11 @@ const permissions = [
   "android.permission.RECORD_AUDIO",
   "android.permission.FOREGROUND_SERVICE",
   "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+  "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+  "android.permission.MODIFY_AUDIO_SETTINGS",
 ];
 const services = [
-  { name: "com.supersami.foregroundservice.ForegroundService", type: "microphone" },
+  { name: "com.supersami.foregroundservice.ForegroundService", type: "microphone|mediaPlayback" },
   { name: "com.supersami.foregroundservice.ForegroundServiceTask" },
 ];
 const metadata = [

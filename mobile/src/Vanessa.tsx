@@ -5,14 +5,27 @@ import * as DocumentPicker from "expo-document-picker";
 import { useConversation } from "@elevenlabs/react-native";
 import ReactNativeForegroundService from "@supersami/rn-foreground-service";
 import { PrimeApi } from "./api";
+import { LiveTextCopilot } from "./live-copilot";
+import { VonageAudioCopilot } from "./vonage-audio-copilot";
 
 type Colors = { text: string; muted: string; panel: string; line: string; accent: string };
-export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; colors: Colors; allowed: boolean }) {
+export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, interpreterAllowed }: { api: PrimeApi; colors: Colors; allowed: boolean; phoneCopilotAllowed: boolean; interpreterAllowed: boolean }) {
   const socket = useRef<WebSocket | null>(null);
   const conversation = useRef("");
+  const voiceConversation = useRef("");
+  const trackedConversations = useRef(new Set<string>());
+  const audioCopilotConversations = useRef(new Set<string>());
   const accessToken = useRef("");
   const refreshProposalsRef = useRef<() => Promise<void>>(async () => {});
   const generation = useRef(0);
+  const liveCopilot = useRef<LiveTextCopilot | null>(null);
+  const audioCopilot = useRef<VonageAudioCopilot | null>(null);
+  const activityTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [listening, setListening] = useState(false);
+  const [callConsent, setCallConsent] = useState(false);
+  const [copilotMode, setCopilotMode] = useState<"text" | "voice" | "interpreter">("text");
+  const [copilotOutput, setCopilotOutput] = useState<"both" | "text" | "voice">("both");
+  const activeCopilotMode = !interpreterAllowed && copilotMode === "interpreter" ? "voice" : copilotMode;
   const [mode, setMode] = useState<"workspace" | "copilot">("workspace");
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const [draft, setDraft] = useState("");
@@ -20,6 +33,19 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [proposals, setProposals] = useState<{ id: string; payload: Record<string, unknown> }[]>([]);
+  function trackConversation(id: string, mode: string, copilotAudio = false) {
+    if (!id) return;
+    trackedConversations.current.add(id);
+    if (copilotAudio) audioCopilotConversations.current.add(id);
+    void api.post("/api/elite/conversations", { conversationId: id, mode }).catch(() => {});
+  }
+  function finishConversation(id: string) {
+    if (!id || !trackedConversations.current.delete(id)) return;
+    audioCopilotConversations.current.delete(id);
+    if (conversation.current === id) conversation.current = "";
+    if (voiceConversation.current === id) voiceConversation.current = "";
+    void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+  }
   const refreshProposals = useCallback(async () => {
     setProposals(await api.get("/api/elite/proposals"));
   }, [api]);
@@ -35,14 +61,12 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
   const voice = useConversation({
     clientTools,
     onConnect: ({ conversationId }) => {
-      conversation.current = conversationId;
+      voiceConversation.current = conversationId;
+      trackConversation(conversationId, "voice");
       setStatus("Conversazione vocale Vanessa collegata.");
-      void api.post("/api/elite/conversations", { conversationId, mode: "voice" }).catch(() => {});
     },
     onDisconnect: () => {
-      const id = conversation.current;
-      conversation.current = "";
-      if (id) void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+      finishConversation(voiceConversation.current);
       if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
       setStatus("Conversazione vocale terminata.");
     },
@@ -91,15 +115,17 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
     }
   }
   const stop = () => {
+    void liveCopilot.current?.stop(); liveCopilot.current = null;
+    void audioCopilot.current?.stop(); audioCopilot.current = null;
+    if (activityTimer.current) clearInterval(activityTimer.current); activityTimer.current = null;
+    setListening(false);
     generation.current += 1;
     socket.current?.close(); socket.current = null;
     if (voice.status !== "disconnected") {
       void voice.endSession();
       if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
-    } else {
-      const id = conversation.current; conversation.current = "";
-      if (id) void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
     }
+    for (const id of trackedConversations.current) finishConversation(id);
   };
   useEffect(() => () => stop(), [api]); // eslint-disable-line react-hooks/exhaustive-deps
   const append = (role: string, text: string) => setMessages(old => [...old, { role, text }]);
@@ -126,8 +152,8 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
           const value = JSON.parse(String(event.data));
           if (value.type === "conversation_initiation_metadata") {
             conversation.current = value.conversation_initiation_metadata_event.conversation_id;
+            trackConversation(conversation.current, mode);
             clearTimeout(timer); setStatus("Vanessa collegata"); resolve();
-            void api.post("/api/elite/conversations", { conversationId: conversation.current, mode }).catch(() => {});
           } else if (value.type === "ping") ws.send(JSON.stringify({ type: "pong", event_id: value.ping_event.event_id }));
           else if (value.type === "agent_response") append("Vanessa", value.agent_response_event.agent_response);
           else if (value.type === "client_tool_call") {
@@ -171,12 +197,73 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
       setDraft(""); setFiles([]); setStatus("In attesa di Vanessa…");
     } catch (e) { setStatus(e instanceof Error ? e.message : "Invio non riuscito."); } finally { setBusy(false); }
   }
+  async function startLiveCopilot() {
+    if (!callConsent || busy || !allowed) return;
+    setBusy(true);
+    try {
+      const ws = await connect();
+      const controller = new LiveTextCopilot(api, {
+        status: setStatus,
+        transcript: text => append("Chiamata · trascrizione live", text),
+        send: text => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "user_message", text })); },
+        ended: () => { setListening(false); if (activityTimer.current) clearInterval(activityTimer.current); activityTimer.current = null; },
+      });
+      liveCopilot.current = controller;
+      setListening(true);
+      activityTimer.current = setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "user_activity" })); }, 15000);
+      await controller.start();
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Avvio Copilot non riuscito."); } finally { setBusy(false); }
+  }
+  async function startAudioCopilot(mode: "voice" | "interpreter") {
+    if (!callConsent || busy || !allowed) return;
+    setBusy(true);
+    try {
+      const controller = new VonageAudioCopilot(api, {
+        status: setStatus,
+        transcript: (speaker, value) => append(speaker, value),
+        response: value => append("Suggerimento Vanessa", value),
+        conversation: id => trackConversation(id, "copilot", true),
+        ended: () => {
+          audioCopilot.current = null;
+          setListening(false);
+          for (const id of audioCopilotConversations.current) finishConversation(id);
+          if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+        },
+      });
+      audioCopilot.current = controller;
+      setListening(true);
+      if (Platform.OS === "android") await ReactNativeForegroundService.start({
+        id: 7310,
+        title: "PRIME · Vanessa",
+        message: mode === "interpreter" ? "Copilot interprete attivo" : "Copilot vocale attivo",
+        ServiceType: "mediaPlayback",
+        icon: "ic_launcher",
+        importance: "low",
+      } as Parameters<typeof ReactNativeForegroundService.start>[0]);
+      await controller.start(mode, copilotOutput);
+    } catch (error) {
+      audioCopilot.current = null;
+      setListening(false);
+      if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+      setStatus(error instanceof Error ? error.message : "Avvio Copilot non riuscito.");
+    } finally { setBusy(false); }
+  }
   const button = (label: string, action: () => void, disabled = false) => <Pressable disabled={disabled || busy || !allowed} onPress={action} style={{ borderColor: c.line, borderWidth: 1, borderRadius: 9, padding: 13, opacity: disabled || !allowed ? 0.5 : 1 }}><Text style={{ color: c.accent }}>{label}</Text></Pressable>;
   return <View style={{ gap: 14 }}>
     <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><Image source={require("../assets/vanessa-face-icon.png")} style={{ width: 80, height: 80, borderRadius: 40 }} /><Text style={{ color: c.text, fontSize: 22 }}>Vanessa</Text></View>
     {!allowed && <Text style={{ color: c.muted }}>Vanessa è disponibile da VIP. Cambia piano per provarla.</Text>}
-    <View style={{ flexDirection: "row", gap: 10 }}>{button("Chat operativa", () => { stop(); setMode("workspace"); })}{button("Copilot testuale", () => { stop(); setMode("copilot"); })}</View>
-    {mode === "copilot" && <Text style={{ color: c.muted }}>Incolla i passaggi della chiamata per ricevere suggerimenti contestuali. L’ascolto automatico della chiamata non è ancora disponibile in questa versione mobile.</Text>}
+    <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>{button("Chat operativa", () => { stop(); setMode("workspace"); })}{phoneCopilotAllowed && button("Copilot testuale", () => { stop(); setMode("copilot"); })}</View>
+    {mode === "copilot" && !phoneCopilotAllowed && <Text style={{ color: c.muted }}>Nella demo pubblica le chiamate Copilot sono disponibili solo selezionando il piano Secret. Nel workspace Live collega Vonage in PRIME Connect.</Text>}
+    {mode === "copilot" && phoneCopilotAllowed && <View style={{ gap: 10 }}>
+      <Text style={{ color: c.muted }}>Copilot testuale · ascolto live della chiamata Vonage. PRIME acquisisce entrambe le parti dalla linea telefonica.</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {([["text", "Copilot testuale"], ["voice", "Copilot vocale"], ["interpreter", "Copilot interprete" ]] as const).filter(([value]) => value !== "interpreter" || interpreterAllowed).map(([value, label]) => <Pressable key={value} onPress={() => { if (listening) stop(); setCopilotMode(value); }} style={{ padding: 10, borderRadius: 9, borderWidth: 1, borderColor: activeCopilotMode === value ? c.accent : c.line }}><Text style={{ color: activeCopilotMode === value ? c.accent : c.text }}>{label}</Text></Pressable>)}
+      </View>
+      {activeCopilotMode === "voice" && <View style={{ gap: 7 }}><Text style={{ color: c.muted }}>Risposta di Vanessa</Text><View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>{([ ["both", "Testo e voce"], ["text", "Solo testo"], ["voice", "Solo voce"] ] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: copilotOutput === value }} onPress={() => setCopilotOutput(value)} style={{ padding: 9, borderRadius: 8, borderWidth: 1, borderColor: copilotOutput === value ? c.accent : c.line }}><Text style={{ color: copilotOutput === value ? c.accent : c.text, fontSize: 12 }}>{label}</Text></Pressable>)}</View></View>}
+      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: callConsent }} onPress={() => setCallConsent(value => !value)} style={{ paddingVertical: 10 }}><Text style={{ color: c.text }}>{callConsent ? "✓ " : ""}Autorizzo l’ascolto della chiamata per trascrizione e suggerimenti</Text></Pressable>
+      {!listening && button(activeCopilotMode === "text" ? "Avvia ascolto Copilot" : activeCopilotMode === "voice" ? "Avvia Copilot vocale" : "Avvia interprete vocale", () => { if (activeCopilotMode === "text") void startLiveCopilot(); else void startAudioCopilot(activeCopilotMode); }, !callConsent)}
+      {listening && <Pressable onPress={() => { stop(); setStatus("Ascolto Copilot terminato."); }} style={{ padding: 13, borderColor: c.line, borderWidth: 1, borderRadius: 9 }}><Text style={{ color: c.accent }}>Termina ascolto Copilot</Text></Pressable>}
+    </View>}
     <View style={{ borderColor: c.line, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 }}>
       <Pressable onPress={() => setVoiceConsent(value => !value)} style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
         <Text style={{ color: c.accent, fontSize: 18 }}>{voiceConsent ? "☑" : "□"}</Text>
