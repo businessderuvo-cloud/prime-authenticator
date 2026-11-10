@@ -21,6 +21,7 @@ function loadApi() {
     module,
     exports: module.exports,
     require: (name) => {
+      if (name === "./device-security") return { BIOMETRIC_KEY: "prime.live.biometric.v1" };
       assert.equal(name, "expo-secure-store");
       return storage;
     },
