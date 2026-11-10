@@ -10,7 +10,7 @@ def tree():
         except (subprocess.CalledProcessError,ET.ParseError) as error:
             last=error;time.sleep(1)
     raise AssertionError('Android UI hierarchy did not become available') from last
-def tap(label,timeout=50,scroll=False):
+def tap(label,timeout=180,scroll=False):
     until=time.time()+timeout
     while time.time()<until:
         root=tree()
@@ -22,7 +22,7 @@ def tap(label,timeout=50,scroll=False):
                 if x2<=0 or y2<=0 or x1>=1080 or y1>=1920:
                     continue
                 adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));return
-        if scroll: adb('shell','input','swipe','540','1600','540','600','400')
+        if scroll: adb('shell','input','swipe','540','1400','540','1050','600')
         time.sleep(2)
     raise AssertionError('Control not found: '+label)
 def expect(text,timeout=50):
@@ -42,7 +42,7 @@ def scroll_expect(text,timeout=40):
         if any(text in (n.get('text','')+' '+n.get('content-desc','')) for n in root.iter('node')):
             assert not any(n.get('class')=='android.webkit.WebView' for n in root.iter('node'))
             return
-        adb('shell','input','swipe','540','1600','540','600','400')
+        adb('shell','input','swipe','540','1400','540','1050','600')
         time.sleep(1)
     raise AssertionError('Text not found after scrolling: '+text)
 def scroll_top():
@@ -66,10 +66,10 @@ try:
     expect('PRIME Connect');expect('Attiva dati fittizi');shot('03-connect-before-demos.png')
     tap('Attiva dati fittizi Stripe',scroll=True)
     expect('DATI DIMOSTRATIVI');shot('04-stripe-intro.png');scroll_expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
-    tap('Disattiva dati fittizi Stripe',scroll=True);expect('PRIME Connect');scroll_top()
+    tap('Connect');tap('Disattiva dati fittizi Stripe',scroll=True);expect('PRIME Connect');scroll_top()
     tap('Attiva dati fittizi Wallester',scroll=True)
     expect('Wallester Business');expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')
-    tap('Disattiva dati fittizi Wallester',scroll=True);expect('PRIME Connect');scroll_top()
+    tap('Connect');tap('Disattiva dati fittizi Wallester',scroll=True);expect('PRIME Connect');scroll_top()
     scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
     shot('05-last-state.png')

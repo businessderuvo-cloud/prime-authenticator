@@ -2,6 +2,11 @@ name: PRIME Mobile APK
 
 on:
   workflow_dispatch:
+    inputs:
+      reuse_run:
+        description: 'Existing APK run to retest (must match app source)'
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
@@ -10,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: prime-mobile-apk-${{ github.ref }}
@@ -40,8 +46,10 @@ jobs:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
       - name: Install Android components
+        if: ${{ !inputs.reuse_run }}
         run: sdkmanager 'platform-tools' 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
       - name: Install application dependencies
+        if: ${{ !inputs.reuse_run }}
         run: npm ci
       - name: Read mobile release version
         run: |
@@ -50,19 +58,46 @@ jobs:
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
           echo "ANDROID_VERSION_CODE=$ANDROID_VERSION_CODE" >> "$GITHUB_ENV"
       - name: Check source and session isolation
+        if: ${{ !inputs.reuse_run }}
         run: |
           npm run typecheck
           npm run lint
           npm test
       - name: Generate native Android application
+        if: ${{ !inputs.reuse_run }}
         run: npx expo prebuild --platform android --no-install
       - name: Build standalone APK
+        if: ${{ !inputs.reuse_run }}
         working-directory: mobile/android
         env:
           NODE_ENV: production
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --build-cache --max-workers=3 -Pkotlin.compiler.execution.strategy=in-process --console=plain
+      - name: Validate reused APK source
+        if: ${{ inputs.reuse_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REUSE_RUN: ${{ inputs.reuse_run }}
+        run: |
+          source_sha=$(gh run view "$REUSE_RUN" --json headSha --jq .headSha)
+          git fetch origin "$source_sha" --depth=1
+          git diff --exit-code "$source_sha" HEAD -- src assets plugins app.json package.json package-lock.json
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.reuse_run }}
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.reuse_run }}
+          name: PRIME-Mobile-Android-v${{ env.APP_VERSION }}
+          path: mobile/release
+      - name: Restore existing APK
+        if: ${{ inputs.reuse_run }}
+        run: |
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          mkdir -p android/app/build/outputs/apk/release
+          cp "release/PRIME-Mobile-Android-v${APP_VERSION}.apk" android/app/build/outputs/apk/release/app-release.apk
+          rm -f release/*.png release/android-ui.xml release/android-logcat.txt
+          sdkmanager 'build-tools;37.0.0'
       - name: Verify signature, package and embedded application
         run: |
           set -eu
