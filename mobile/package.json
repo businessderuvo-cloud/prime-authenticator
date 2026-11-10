@@ -7,7 +7,7 @@
     "@elevenlabs/react-native": "^1.2.38",
     "@livekit/react-native": "^2.12.0",
     "@livekit/react-native-expo-plugin": "^1.1.0",
-    "@livekit/react-native-webrtc": "^144.2.0",
+    "@livekit/react-native-webrtc": "144.1.2",
     "@supersami/rn-foreground-service": "^2.2.5",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
