@@ -66,10 +66,10 @@ try:
     expect('PRIME Connect');expect('Attiva dati fittizi');shot('03-connect-before-demos.png')
     tap('Attiva dati fittizi Stripe',scroll=True)
     expect('DATI DIMOSTRATIVI');shot('04-stripe-intro.png');scroll_expect('Entrate, in attesa e uscite');shot('04-stripe-demo.png')
-    tap('Connect');tap('Disattiva dati fittizi Stripe',scroll=True);expect('PRIME Connect');scroll_top()
+    tap('Connect');tap('Disattiva dati fittizi Stripe',scroll=True);scroll_top();expect('PRIME Connect')
     tap('Attiva dati fittizi Wallester',scroll=True)
     expect('Wallester Business');expect('DATI DIMOSTRATIVI');shot('05-wallester-demo.png')
-    tap('Connect');tap('Disattiva dati fittizi Wallester',scroll=True);expect('PRIME Connect');scroll_top()
+    tap('Connect');tap('Disattiva dati fittizi Wallester',scroll=True);scroll_top();expect('PRIME Connect')
     scroll_expect('Google Calendar');expect('CALENDARI');shot('04-connect.png')
 finally:
     shot('05-last-state.png')
