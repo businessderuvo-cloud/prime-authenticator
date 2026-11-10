@@ -24,6 +24,7 @@ Questa versione amplia la ricostruzione nativa del gestionale. È React Native, 
 - Test Copilot automatizzati: isolamento della sessione demo/live, consenso, trascrizione e rilascio delle risorse.
 - La compilazione locale Windows non ha prodotto l’APK: il task di `react-native-audio-api` avvia uno script POSIX che, in questa installazione Git Bash, non trova `dirname`, `mkdir` e `rm`. La pipeline Linux GitHub è il percorso di build configurato.
 - La build 0.2.11 ha superato compilazione e firma. Il test emulatore ha selezionato Stripe e caricato il grafico, ma la schermata si è aperta alla posizione di scorrimento precedente della pagina Connect, lasciando fuori vista l’intestazione demo. La 0.2.12 riporta lo scroll all’inizio a ogni cambio pagina; test emulatore in corso.
+- La run 42906216151 ha completato con successo il test Android della 0.2.12: demo pubblica, cambio piano, VIP, attivazione/disattivazione Stripe e Wallester, badge e grafico Stripe, categorie Connect. La release GitHub `mobile-android-v0.2.12` è pubblicata; download diretto e checksum verificati.
 - Telefono fisico/iPhone non verificati.
 
 ## Requisiti prima della dicitura “parità completa”
