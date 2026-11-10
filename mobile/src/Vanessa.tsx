@@ -1,13 +1,17 @@
 /* eslint-disable react-hooks/refs -- button() only forwards callbacks to Pressable.onPress; refs are accessed by events, never during render. */
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Image, Pressable, Text, TextInput, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Image, PermissionsAndroid, Platform, Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import { useConversation } from "@elevenlabs/react-native";
+import ReactNativeForegroundService from "@supersami/rn-foreground-service";
 import { PrimeApi } from "./api";
 
 type Colors = { text: string; muted: string; panel: string; line: string; accent: string };
 export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; colors: Colors; allowed: boolean }) {
   const socket = useRef<WebSocket | null>(null);
   const conversation = useRef("");
+  const accessToken = useRef("");
+  const refreshProposalsRef = useRef<() => Promise<void>>(async () => {});
   const generation = useRef(0);
   const [mode, setMode] = useState<"workspace" | "copilot">("workspace");
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
@@ -16,14 +20,86 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [proposals, setProposals] = useState<{ id: string; payload: Record<string, unknown> }[]>([]);
-  async function refreshProposals() {
+  const refreshProposals = useCallback(async () => {
     setProposals(await api.get("/api/elite/proposals"));
+  }, [api]);
+  useEffect(() => { refreshProposalsRef.current = refreshProposals; }, [refreshProposals]);
+  const clientTools = useMemo(() => ({
+    prime_workspace: async (parameters: Record<string, unknown>) => {
+      if (!accessToken.current) throw Error("Sessione PRIME scaduta. Avvia di nuovo Vanessa.");
+      const result = await api.eliteTool(parameters, accessToken.current);
+      void refreshProposalsRef.current().catch(() => {});
+      return JSON.stringify(result);
+    },
+  }), [api]);
+  const voice = useConversation({
+    clientTools,
+    onConnect: ({ conversationId }) => {
+      conversation.current = conversationId;
+      setStatus("Conversazione vocale Vanessa collegata.");
+      void api.post("/api/elite/conversations", { conversationId, mode: "voice" }).catch(() => {});
+    },
+    onDisconnect: () => {
+      const id = conversation.current;
+      conversation.current = "";
+      if (id) void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+      if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+      setStatus("Conversazione vocale terminata.");
+    },
+    onError: (message) => {
+      if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+      setStatus(message || "Connessione audio interrotta.");
+    },
+    onMessage: ({ role, message }) => append(role === "user" ? "Tu" : "Vanessa", message),
+  });
+  const [voiceConsent, setVoiceConsent] = useState(false);
+  async function startVoice() {
+    if (!allowed || busy) return;
+    if (!voiceConsent) { setStatus("Autorizza l’uso del microfono per avviare la conversazione."); return; }
+    setBusy(true);
+    setStatus("Preparo la conversazione vocale…");
+    try {
+      if (Platform.OS === "android") {
+        const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+        if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw Error("Autorizza il microfono per parlare con Vanessa.");
+      }
+      const data = await api.post<{ conversationToken?: string; dynamicVariables: Record<string, string>; firstMessage: string }>(
+        "/api/elite/session",
+        { mode: "voice", agentId: "vanessa", language: "it", native: true },
+      );
+      if (!data.conversationToken) throw Error("Il gestionale non ha restituito il token nativo per Vanessa. Aggiorna il servizio PRIME e riprova.");
+      accessToken.current = data.dynamicVariables.secret__prime_access_token || "";
+      if (Platform.OS === "android") await ReactNativeForegroundService.start({
+        id: 7310,
+        title: "PRIME · Vanessa",
+        message: "Conversazione vocale attiva",
+        ServiceType: "microphone",
+        icon: "ic_launcher",
+        importance: "low",
+      } as Parameters<typeof ReactNativeForegroundService.start>[0]);
+      voice.startSession({
+        conversationToken: data.conversationToken,
+        dynamicVariables: data.dynamicVariables,
+        overrides: { agent: { firstMessage: data.firstMessage }, conversation: { textOnly: false } },
+      });
+      setStatus("Collegamento audio in corso…");
+    } catch (error) {
+      if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+      setStatus(error instanceof Error ? error.message : "Avvio della conversazione non riuscito.");
+    } finally {
+      setBusy(false);
+    }
   }
   const stop = () => {
     generation.current += 1;
     socket.current?.close(); socket.current = null;
-    const id = conversation.current; conversation.current = "";
-    if (id) void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+    if (voice.status !== "disconnected") {
+      void voice.endSession();
+      if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+    } else {
+      const id = conversation.current; conversation.current = "";
+      if (id) void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+    }
   };
   useEffect(() => () => stop(), [api]); // eslint-disable-line react-hooks/exhaustive-deps
   const append = (role: string, text: string) => setMessages(old => [...old, { role, text }]);
@@ -101,6 +177,14 @@ export default function Vanessa({ api, colors: c, allowed }: { api: PrimeApi; co
     {!allowed && <Text style={{ color: c.muted }}>Vanessa è disponibile da VIP. Cambia piano per provarla.</Text>}
     <View style={{ flexDirection: "row", gap: 10 }}>{button("Chat operativa", () => { stop(); setMode("workspace"); })}{button("Copilot testuale", () => { stop(); setMode("copilot"); })}</View>
     {mode === "copilot" && <Text style={{ color: c.muted }}>Incolla i passaggi della chiamata per ricevere suggerimenti contestuali. L’ascolto automatico della chiamata non è ancora disponibile in questa versione mobile.</Text>}
+    <View style={{ borderColor: c.line, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 }}>
+      <Pressable onPress={() => setVoiceConsent(value => !value)} style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+        <Text style={{ color: c.accent, fontSize: 18 }}>{voiceConsent ? "☑" : "□"}</Text>
+        <Text style={{ color: c.muted, flex: 1 }}>Autorizzo il microfono per parlare con Vanessa. La conversazione può continuare mentre PRIME è in background.</Text>
+      </Pressable>
+      {button(voice.status === "connected" ? "Conversazione vocale attiva" : "Parla con Vanessa", () => { void startVoice(); }, voice.status === "connected" || voice.status === "connecting")}
+      {voice.status !== "disconnected" && button("Termina conversazione vocale", () => { void voice.endSession(); if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {}); })}
+    </View>
     {messages.map((m, i) => <View key={i} style={{ backgroundColor: c.panel, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 14, gap: 6 }}><Text style={{ color: c.accent }}>{m.role}</Text><Text selectable style={{ color: c.text, lineHeight: 23 }}>{m.text}</Text></View>)}
     <TextInput editable={allowed && !busy} multiline value={draft} onChangeText={setDraft} maxLength={2000} placeholder={mode === "copilot" ? "Trascrizione della chiamata…" : "Scrivi a Vanessa…"} placeholderTextColor={c.muted} style={{ color: c.text, borderWidth: 1, borderColor: c.line, borderRadius: 10, padding: 14, minHeight: 90 }} />
     {files.map((file, i) => <Pressable key={file.uri} onPress={() => setFiles(old => old.filter((_, index) => index !== i))}><Text style={{ color: c.text }}>📎 {file.name} · Rimuovi</Text></Pressable>)}

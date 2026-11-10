@@ -25,6 +25,8 @@ import brand from "./brand.json";
 import providerLogos from "./provider-logos.json";
 import NativeMap from "./NativeMap";
 import Vanessa from "./Vanessa";
+import SecuritySettings from "./SecuritySettings";
+import { useConversation } from "@elevenlabs/react-native";
 import { metricValue } from "./site-metrics";
 type Field = {
   label: string;
@@ -419,6 +421,7 @@ export default function Workspace({
   onLegacy: (tab: "Piani" | "Account") => void;
   onLogout: () => Promise<void>;
 }) {
+  const voiceSession = useConversation();
   const params = useLocalSearchParams<{ page?: string }>();
   const page = params.page || "dashboard";
   const plan =
@@ -1017,6 +1020,14 @@ export default function Workspace({
           </Pressable>
         </View>
       )}
+      {voiceSession.status === "connected" && (
+        <View style={[styles.demo, { marginHorizontal: 16, borderRadius: 10 }]}>
+          <Text style={[styles.small, { flex: 1 }]}>Vanessa · conversazione vocale attiva</Text>
+          <Pressable onPress={() => { void voiceSession.endSession(); }} style={styles.badge}>
+            <Text style={styles.small}>Termina</Text>
+          </Pressable>
+        </View>
+      )}
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -1571,7 +1582,10 @@ export default function Workspace({
             ))}
           </>
         )}
-        {page === "assistant" && <Vanessa api={api} colors={c} allowed={rank >= 2} />}
+        <View style={{ display: page === "assistant" ? "flex" : "none", gap: 14 }}>
+          <Vanessa api={api} colors={c} allowed={rank >= 2} />
+        </View>
+        {page === "security" && <SecuritySettings key={mode} api={api} mode={mode} colors={c} />}
         {page === "upgrade" && (
           <>
             <Text style={styles.muted}>

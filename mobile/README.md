@@ -1,4 +1,4 @@
-# PRIME Mobile 0.2.3
+# PRIME Mobile 0.2.4
 
 App Android/iOS con schermate React Native. L’app usa le API del gestionale e la demo pubblica esistente; non carica il sito in una WebView.
 
@@ -20,11 +20,11 @@ App Android/iOS con schermate React Native. L’app usa le API del gestionale e 
 
 La copertura funzionale non è ancora identica al sito in ogni dettaglio. Le operazioni specialistiche dei provider, l’upload dei file, le firme, le funzioni telefoniche/copilot e alcuni flussi avanzati richiedono ulteriore sviluppo nativo. Il controllo di configurazione in Connect non equivale a un test riuscito del provider. Le autorizzazioni e i test con account reali restano necessari.
 
-Login, 2FA e KYB usano gli endpoint esistenti; i documenti KYB e gli accessi OAuth aprono il servizio esterno. Non sono state usate credenziali Live o documenti personali per il collaudo. Nessuna modifica è stata pubblicata al gestionale PRIME.
+Login, 2FA e KYB usano gli endpoint esistenti; i documenti KYB e gli accessi OAuth aprono il servizio esterno. Non sono state usate credenziali Live o documenti personali per il collaudo. Nessuna modifica è stata pubblicata al gestionale PRIME. Gli account Live possono attivare l’accesso biometrico locale e configurare Authenticator, SMS, chiamata o email con la policy 2FA del gestionale. Vanessa include una sessione vocale nativa con audio in background; le modalità Copilot collegate alle chiamate telefoniche e la trascrizione live richiedono ancora sviluppo nativo.
 
 Gli acquisti dei piani restano disabilitati: l’utente deve ancora creare gli account sviluppatore Apple/Google. Servono prodotti store e endpoint server `/api/mobile/store/config`, `/intent`, `/verify`, con verifica diretta Apple/Google, controllo KYB e titolare, associazione univoca all’agenzia e gestione di rinnovi/rimborsi/revoche. Il client non abilita mai un piano a partire dal solo esito locale del pagamento. Secret resta su preventivo.
 
-L’APK è una build di prova firmata con la chiave di sviluppo, per Android 7+ a 64 bit. Le release di Authenticator rimangono separate. iOS ha il sorgente nativo ma non dispone ancora di un IPA firmato. Per la pubblicazione sugli store occorrono gli account sviluppatore e una firma definitiva. Icona e schermata di avvio usano una versione vettoriale ad alta risoluzione del simbolo fornito.
+L’APK è una build di prova firmata con la chiave di sviluppo, per Android 7+ a 64 bit. Le release di Authenticator rimangono separate. iOS ha il sorgente nativo ma non dispone ancora di un IPA firmato. Per la pubblicazione sugli store occorrono gli account sviluppatore e una firma definitiva. Icona e schermata di avvio usano una versione vettoriale ad alta risoluzione del simbolo fornito. La versione viene incrementata a ogni APK consegnato.
 
 ## Verifiche e build
 

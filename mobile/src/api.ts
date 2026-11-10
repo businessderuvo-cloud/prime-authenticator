@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { BIOMETRIC_KEY } from "./device-security";
 export type Mode = "demo" | "live";
 export type Me = {
   id: string;
@@ -93,7 +94,7 @@ export class PrimeApi {
         .get("content-type")
         ?.includes("application/json")
         ? await response.json()
-        : null;
+        : await response.text();
       if (!response.ok)
         throw new ApiError(
           data?.error ||
@@ -115,8 +116,21 @@ export class PrimeApi {
     return this.me();
   }
   async restore() {
-    if (this.mode === "live")
+    if (this.mode === "live") {
+      if ((await SecureStore.getItemAsync(BIOMETRIC_KEY)) === "enabled") {
+        const LocalAuthentication = await import("expo-local-authentication");
+        const available = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!available || !enrolled) return null;
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: "Sblocca la sessione PRIME",
+          cancelLabel: "Annulla",
+          disableDeviceFallback: true,
+        });
+        if (!result.success) return null;
+      }
       this.cookie = (await SecureStore.getItemAsync(KEY)) || "";
+    }
     if (!this.cookie) return null;
     try {
       return await this.me();
@@ -174,6 +188,9 @@ export class PrimeApi {
   }
   get<T>(path: string) {
     return this.request<T>(path);
+  }
+  getText(path: string) {
+    return this.request<string>(path);
   }
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>(path, "POST", body);

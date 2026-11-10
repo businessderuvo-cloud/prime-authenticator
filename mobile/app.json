@@ -2,25 +2,33 @@
   "expo": {
     "name": "PRIME",
     "slug": "prime-mobile",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "orientation": "default",
     "scheme": "prime",
     "icon": "./assets/prime-icon.png",
     "backgroundColor": "#050505",
     "userInterfaceStyle": "dark",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "it.primegestionale.mobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "PRIME usa il microfono quando avvii una conversazione vocale con Vanessa.",
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
       "package": "it.primegestionale.mobile",
-      "permissions": [],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
-      "versionCode": 5
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+      ],
+      "versionCode": 6
     },
     "plugins": [
       "expo-secure-store",
@@ -39,7 +47,11 @@
           }
         }
       ],
-      "./plugins/withPrimeIcon.js"
+      "./plugins/withPrimeIcon.js",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      "expo-local-authentication",
+      "./plugins/withVoiceBackground.js"
     ]
   }
 }

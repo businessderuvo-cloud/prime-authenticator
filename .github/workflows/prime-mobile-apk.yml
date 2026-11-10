@@ -63,10 +63,11 @@ jobs:
           apk=android/app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose "$apk"
           "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "package: name='it.primegestionale.mobile'"
+          "$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$apk" | grep -F "versionCode='6' versionName='0.2.4'"
           unzip -l "$apk" | grep -F 'assets/index.android.bundle'
           mkdir -p release
-          cp "$apk" release/PRIME-Mobile-Android-v0.2.3.apk
-          (cd release && sha256sum PRIME-Mobile-Android-v0.2.3.apk > SHA256SUMS.txt)
+          cp "$apk" release/PRIME-Mobile-Android-v0.2.4.apk
+          (cd release && sha256sum PRIME-Mobile-Android-v0.2.4.apk > SHA256SUMS.txt)
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -86,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PRIME-Mobile-Android-v0.2.3
+          name: PRIME-Mobile-Android-v0.2.4
           path: mobile/release/*
           if-no-files-found: error
           retention-days: 30
@@ -95,18 +96,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=mobile-android-v0.2.3
+          tag=mobile-android-v0.2.4
           cat > release/notes.md <<'NOTES'
-          PRIME Mobile 0.2.3 — aggiornamento nativo per Android 64 bit (arm64).
+          PRIME Mobile 0.2.4 — aggiornamento nativo per Android 64 bit (arm64).
 
           Logo di avvio ridisegnato ad alta risoluzione e integrato con lo sfondo; loghi provider inclusi nell’app; menu diviso in categorie come il sito; palette VIP corretta; anteprime stagionali disponibili nella demo; sezioni dedicate nascoste fino all’attivazione del servizio; pagamenti Stripe dimostrativi, senza collegamento o richieste reali.
 
-          PRIME Mobile è un’app nativa React Native, senza WebView. L’APK è firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play. Gli acquisti reali attendono account store, prodotti e verifica server dei pagamenti.
+          PRIME Mobile è un’app nativa React Native, senza WebView. Include conversazione vocale nativa con Vanessa, continuità audio in background, accesso biometrico locale facoltativo e gestione dei metodi 2FA Live. Il livello di funzioni Copilot per telefonia deve ancora raggiungere la parità con il sito.
+
+          L’APK è firmato con la chiave di sviluppo del progetto; non è una distribuzione Google Play. Gli acquisti reali attendono account store, prodotti e verifica server dei pagamenti.
 
           L’app Authenticator già presente nel repository rimane separata e le sue release non vengono modificate.
           NOTES
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.3.apk release/SHA256SUMS.txt release/*.png --clobber
+            gh release upload "$tag" release/PRIME-Mobile-Android-v0.2.4.apk release/SHA256SUMS.txt release/*.png --clobber
           else
-            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.3.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.3 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
+            gh release create "$tag" release/PRIME-Mobile-Android-v0.2.4.apk release/SHA256SUMS.txt release/*.png --target "$GITHUB_SHA" --title 'PRIME Mobile Android 0.2.4 — prova nativa' --notes-file release/notes.md --prerelease --latest=false
           fi
