@@ -5,6 +5,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { useConversation } from "@elevenlabs/react-native";
 import ReactNativeForegroundService from "@supersami/rn-foreground-service";
 import { PrimeApi } from "./api";
+import { AssistantSession, signedAssistantSocket } from "./assistant-session";
 import { LiveTextCopilot } from "./live-copilot";
 import { VonageAudioCopilot } from "./vonage-audio-copilot";
 
@@ -20,6 +21,7 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
   const generation = useRef(0);
   const liveCopilot = useRef<LiveTextCopilot | null>(null);
   const audioCopilot = useRef<VonageAudioCopilot | null>(null);
+  const assistantSession = useRef<AssistantSession | null>(null);
   const activityTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [listening, setListening] = useState(false);
   const [callConsent, setCallConsent] = useState(false);
@@ -37,14 +39,16 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
     if (!id) return;
     trackedConversations.current.add(id);
     if (copilotAudio) audioCopilotConversations.current.add(id);
-    void api.post("/api/elite/conversations", { conversationId: id, mode }).catch(() => {});
+    assistantSession.current?.track(id, mode as "workspace" | "voice" | "copilot" | "copilot_text");
+    if (!assistantSession.current) void api.post("/api/elite/conversations", { conversationId: id, mode }).catch(() => {});
   }
   function finishConversation(id: string) {
     if (!id || !trackedConversations.current.delete(id)) return;
     audioCopilotConversations.current.delete(id);
     if (conversation.current === id) conversation.current = "";
     if (voiceConversation.current === id) voiceConversation.current = "";
-    void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
+    if (assistantSession.current) void assistantSession.current.finish(id);
+    else void api.post("/api/elite/conversations/finish", { conversationId: id }).catch(() => {});
   }
   const refreshProposals = useCallback(async () => {
     setProposals(await api.get("/api/elite/proposals"));
@@ -87,10 +91,9 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
         const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
         if (permission !== PermissionsAndroid.RESULTS.GRANTED) throw Error("Autorizza il microfono per parlare con Vanessa.");
       }
-      const data = await api.post<{ conversationToken?: string; dynamicVariables: Record<string, string>; firstMessage: string }>(
-        "/api/elite/session",
-        { mode: "voice", agentId: "vanessa", language: "it", native: true },
-      );
+      const session = new AssistantSession(api, "vanessa");
+      assistantSession.current = session;
+      const data = await session.open({ mode: "voice", native: true });
       if (!data.conversationToken) throw Error("Il gestionale non ha restituito il token nativo per Vanessa. Aggiorna il servizio PRIME e riprova.");
       accessToken.current = data.dynamicVariables.secret__prime_access_token || "";
       if (Platform.OS === "android") await ReactNativeForegroundService.start({
@@ -109,6 +112,9 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
       setStatus("Collegamento audio in corso…");
     } catch (error) {
       if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
+      const session = assistantSession.current;
+      assistantSession.current = null;
+      void session?.close();
       setStatus(error instanceof Error ? error.message : "Avvio della conversazione non riuscito.");
     } finally {
       setBusy(false);
@@ -126,6 +132,9 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
       if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
     }
     for (const id of trackedConversations.current) finishConversation(id);
+    const session = assistantSession.current;
+    assistantSession.current = null;
+    void session?.close();
   };
   useEffect(() => () => stop(), [api]); // eslint-disable-line react-hooks/exhaustive-deps
   const append = (role: string, text: string) => setMessages(old => [...old, { role, text }]);
@@ -133,13 +142,14 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
     if (socket.current?.readyState === WebSocket.OPEN && conversation.current) return socket.current;
     stop();
     const version = generation.current;
-    const data = await api.post<{ signedUrl: string; dynamicVariables: Record<string, string>; firstMessage: string }>("/api/elite/session", {
-      mode, agentId: "vanessa", language: "it", copilotInput: "text", copilotOutput: "text",
-    });
+    const session = new AssistantSession(api, "vanessa");
+    assistantSession.current = session;
+    const data = await session.open({ mode, copilotInput: "text", copilotOutput: "text" });
+    if (!data.signedUrl) throw Error("Il gestionale non ha restituito il collegamento di Vanessa.");
     if (generation.current !== version) throw Error("Sessione annullata.");
     const url = new URL(data.signedUrl);
     if (url.protocol !== "wss:" || url.hostname !== "api.elevenlabs.io") throw Error("Sessione Vanessa non valida.");
-    const ws = new WebSocket(data.signedUrl); socket.current = ws;
+    const ws = signedAssistantSocket(data.signedUrl); socket.current = ws;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => { ws.close(); reject(Error("Vanessa non ha risposto. Riprova.")); }, 20000);
       ws.onopen = () => ws.send(JSON.stringify({ type: "conversation_initiation_client_data", dynamic_variables: data.dynamicVariables,
@@ -218,6 +228,8 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
     if (!callConsent || busy || !allowed) return;
     setBusy(true);
     try {
+      const session = new AssistantSession(api, "vanessa");
+      assistantSession.current = session;
       const controller = new VonageAudioCopilot(api, {
         status: setStatus,
         transcript: (speaker, value) => append(speaker, value),
@@ -229,7 +241,7 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
           for (const id of audioCopilotConversations.current) finishConversation(id);
           if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
         },
-      });
+      }, session);
       audioCopilot.current = controller;
       setListening(true);
       if (Platform.OS === "android") await ReactNativeForegroundService.start({
@@ -243,6 +255,9 @@ export default function Vanessa({ api, colors: c, allowed, phoneCopilotAllowed, 
       await controller.start(mode, copilotOutput);
     } catch (error) {
       audioCopilot.current = null;
+      const session = assistantSession.current;
+      assistantSession.current = null;
+      void session?.close();
       setListening(false);
       if (Platform.OS === "android") void ReactNativeForegroundService.stopAll().catch(() => {});
       setStatus(error instanceof Error ? error.message : "Avvio Copilot non riuscito.");

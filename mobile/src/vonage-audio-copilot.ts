@@ -1,5 +1,6 @@
 import { AudioContext, type AudioBufferQueueSourceNode } from "react-native-audio-api";
 import type { PrimeApi } from "./api";
+import type { AssistantSession } from "./assistant-session";
 
 type Mode = "voice" | "interpreter";
 type Call = { ref: string; state: string };
@@ -131,7 +132,7 @@ export class VonageAudioCopilot {
   private latestCustomerSpeech = "";
   private agentSpeechObserved = false;
 
-  constructor(private api: PrimeApi, private events: Events) {}
+  constructor(private api: PrimeApi, private events: Events, private assistantSession?: AssistantSession) {}
 
   private active() {
     if (this.stopped) throw Error("Collegamento Copilot annullato.");
@@ -212,17 +213,20 @@ export class VonageAudioCopilot {
   }
 
   private async createVoiceSession(instructions?: string, outputMode: "both" | "text" | "voice" = "both") {
-    const session = await this.api.post<{
-      signedUrl: string;
-      dynamicVariables: Record<string, string>;
-      firstMessage?: string;
-    }>("/api/elite/session", {
-      mode: "copilot",
-      agentId: "vanessa",
-      language: "it",
-      copilotInput: "audio",
-      copilotOutput: outputMode,
-    });
+    const session = this.assistantSession
+      ? await this.assistantSession.open({ mode: "copilot", copilotInput: "audio", copilotOutput: outputMode })
+      : await this.api.post<{
+        signedUrl: string;
+        dynamicVariables: Record<string, string>;
+        firstMessage?: string;
+      }>("/api/elite/session", {
+        mode: "copilot",
+        agentId: "vanessa",
+        language: "it",
+        copilotInput: "audio",
+        copilotOutput: outputMode,
+      });
+    if (!session.signedUrl) throw Error("Il gestionale non ha restituito il collegamento audio di Vanessa.");
     return {
       signedUrl: session.signedUrl,
       firstMessage: session.firstMessage || "",
