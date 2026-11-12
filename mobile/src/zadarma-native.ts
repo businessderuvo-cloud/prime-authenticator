@@ -57,18 +57,18 @@ export class ZadarmaNativeCall {
     this.events.status("Chiamata Zadarma in avvio…");
     const session = ua.call(`sip:${target}@${domain}`, {
       mediaConstraints: { audio: true, video: false },
-      pcConfig: { rtcpMuxPolicy: "negotiate" },
+      pcConfig: { rtcpMuxPolicy: "require" },
       eventHandlers: {
         peerconnection: ({ peerconnection }) => {
           const attach = (event: unknown) => {
-            const streams = (event as { streams?: RemoteStream[]; stream?: RemoteStream }).streams;
-            const stream = streams?.[0] || (event as { stream?: RemoteStream }).stream;
+            const streams = (event as unknown as { streams?: RemoteStream[] }).streams;
+            const stream = streams?.[0] || (event as unknown as { stream?: RemoteStream }).stream;
             if (stream) { this.remote = stream; this.events.stream(stream); }
           };
           peerconnection.addEventListener("track", attach);
           peerconnection.addEventListener("addstream", attach);
-          const streams = peerconnection.getRemoteStreams?.() || [];
-          if (streams[0]) { this.remote = streams[0] as RemoteStream; this.events.stream(this.remote); }
+          const streams = (peerconnection.getRemoteStreams?.() || []) as unknown as RemoteStream[];
+          if (streams[0]) { this.remote = streams[0]; this.events.stream(this.remote); }
         },
         progress: () => this.events.status("Squilla su Zadarma…"),
         accepted: () => this.events.status("Chiamata Zadarma accettata."),
