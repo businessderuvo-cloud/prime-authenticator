@@ -25,7 +25,9 @@ import brand from "./brand.json";
 import providerLogos from "./provider-logos.json";
 import NativeMap from "./NativeMap";
 import Vanessa from "./Vanessa";
+import type { AssistantAgentId } from "./Vanessa";
 import VanessaOperations from "./VanessaOperations";
+import Webphone from "./Webphone";
 import SecuritySettings from "./SecuritySettings";
 import StripeWorkspace, {
   type StripeDemoCard,
@@ -228,6 +230,10 @@ const menuGroups = [
     ],
   },
   {
+    title: "WEBPHONE",
+    items: [{ id: "webphone", label: "Webphone" }],
+  },
+  {
     title: "ACCOUNT",
     items: [
       { id: "mail", label: "Email" },
@@ -419,6 +425,7 @@ export default function Workspace({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [query, setQuery] = useState("");
+  const [assistantAgent, setAssistantAgent] = useState<AssistantAgentId>("vanessa");
   const [data, setData] = useState<Record<string, Row[]>>({}),
     [dashboard, setDashboard] = useState<Record<string, unknown>>({}),
     [connection, setConnection] = useState<Record<string, unknown>>({});
@@ -739,6 +746,7 @@ export default function Workspace({
     return rank >= 1;
   };
   const pageIsAvailable = (id: string) => {
+    if (id === "webphone") return rank >= 2 && (!demo || plan === "vip" || plan === "elite" || plan === "secret");
     if (
       id === "wallester" &&
       (!(["owner", "manager"] as string[]).includes(me.role) || (!demo && rank < 2))
@@ -1531,6 +1539,7 @@ export default function Workspace({
             ))}
           </>
         )}
+        {page === "webphone" && <Webphone api={api} colors={c} demo={demo} enabled={!demo || plan === "secret"} />}
         <View style={{ display: page === "assistant" ? "flex" : "none", gap: 14 }}>
           <Vanessa
             api={api}
@@ -1538,8 +1547,11 @@ export default function Workspace({
             allowed={rank >= 2}
             phoneCopilotAllowed={!demo || plan === "secret"}
             interpreterAllowed={!demo && rank >= 3}
+            agentId={assistantAgent}
+            onAgentChange={setAssistantAgent}
+            availableAgents={rank >= 2 ? ["vanessa", "vittoria"] : ["vanessa"]}
           />
-          {page === "assistant" && rank >= 2 && <VanessaOperations api={api} colors={c} owner={me.role === "owner"} />}
+          {page === "assistant" && rank >= 2 && <VanessaOperations api={api} colors={c} owner={me.role === "owner"} agentId={assistantAgent} elite={rank >= 3} />}
         </View>
         {page === "security" && <SecuritySettings key={mode} api={api} mode={mode} colors={c} />}
         {page === "upgrade" && (
