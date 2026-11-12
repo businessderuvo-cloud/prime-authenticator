@@ -37,9 +37,9 @@ export default function VanessaOperations({ api, colors: c, owner, agentId = "va
   useEffect(() => {
     let active = true;
     void api.get<{ settings: Settings; agentsAvailable?: Agent[]; agents?: Agent[] }>("/api/elite/status").then(result => { if (active) { setSettings(result.settings); setAgents([...(result.agentsAvailable || []), ...(result.agents || [])]); } }).catch(error => { if (active) setStatus(error.message); });
-    void refresh().catch(error => { if (active) setStatus(error.message); });
+    const firstRefresh = setTimeout(() => { void refresh().catch(error => { if (active) setStatus(error.message); }); }, 0);
     const timer = setInterval(() => void refresh().catch(() => {}), 20000);
-    return () => { active = false; clearInterval(timer); };
+    return () => { active = false; clearTimeout(firstRefresh); clearInterval(timer); };
   }, [api, refresh]);
   async function run(action: () => Promise<void>) {
     setBusy(true); setStatus("");

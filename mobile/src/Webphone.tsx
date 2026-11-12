@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs -- native audio refs are only read by event handlers and cleanup. */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, PermissionsAndroid, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { AudioContext, AudioRecorder, type AudioBufferQueueSourceNode } from "react-native-audio-api";
@@ -53,16 +54,13 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
     else if (available.some(item => item.provider === "zadarma")) setProvider("zadarma");
   }, [api, demo]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
-  useEffect(() => () => { void stopCall(); }, []);
-
   const available = (id: Provider) => {
     if (demo) return id === "vonage" && enabled;
     const item = providers.find(value => value.provider === id);
     return item?.configured === true || item?.connected === true;
   };
 
-  async function stopCall() {
+  const stopCall = useCallback(async () => {
     const ref = callRef.current;
     callRef.current = "";
     try { await recorder.current?.stop(); } catch { /* già fermo */ }
@@ -82,7 +80,13 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
     }
     setCalling(false);
     setMuted(false);
-  }
+  }, [api, demo]);
+
+  useEffect(() => {
+    const firstRefresh = setTimeout(() => { void refresh().catch(() => {}); }, 0);
+    return () => clearTimeout(firstRefresh);
+  }, [refresh]);
+  useEffect(() => () => { void stopCall(); }, [stopCall]);
 
   async function chooseProvider(next: Provider) {
     if (calling || !available(next)) return;
