@@ -2,7 +2,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, PermissionsAndroid, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { AudioContext, AudioRecorder, type AudioBufferQueueSourceNode } from "react-native-audio-api";
+import { RTCView, type MediaStream } from "@livekit/react-native-webrtc";
 import type { PrimeApi } from "./api";
+import { ZadarmaNativeCall, type ZadarmaCredentials } from "./zadarma-native";
 
 type Colors = { text: string; muted: string; panel: string; line: string; accent: string };
 type Provider = "vonage" | "zadarma";
@@ -42,6 +44,8 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
   const playback = useRef<AudioBufferQueueSourceNode | null>(null);
   const playbackStarted = useRef(false);
   const callRef = useRef("");
+  const zadarma = useRef<ZadarmaNativeCall | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
   const refresh = useCallback(async () => {
     const result = await api.get<TelephonyStatus>("/api/connect/telephony").catch(() => ({ providers: [] }));
@@ -55,7 +59,12 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
   }, [api, demo]);
 
   const available = (id: Provider) => {
-    if (demo) return id === "vonage" && enabled;
+    if (demo) {
+      if (!enabled) return false;
+      if (id === "vonage") return true;
+      const item = providers.find(value => value.provider === id);
+      return item?.configured === true || item?.connected === true || item?.demo === true;
+    }
     const item = providers.find(value => value.provider === id);
     return item?.configured === true || item?.connected === true;
   };
@@ -63,6 +72,9 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
   const stopCall = useCallback(async () => {
     const ref = callRef.current;
     callRef.current = "";
+    await zadarma.current?.stop();
+    zadarma.current = null;
+    setRemoteStream(null);
     try { await recorder.current?.stop(); } catch { /* già fermo */ }
     recorder.current?.clearOnAudioReady();
     recorder.current = null;
@@ -99,13 +111,26 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
     const target = number.replace(/[\s().-]/g, "");
     if (!/^\+[1-9]\d{7,14}$/.test(target)) { setStatus("Inserisci un numero completo in formato internazionale, per esempio +39 333 1234567."); return; }
     if (!available(provider)) { setStatus("Collega prima Vonage o Zadarma da PRIME Connect."); return; }
-    if (provider !== "vonage") { setStatus("Il Webphone nativo usa il canale audio Vonage. Per Zadarma apri PRIME Connect e usa il telefono del provider."); return; }
     if (Platform.OS === "android") {
       const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
       if (permission !== PermissionsAndroid.RESULTS.GRANTED) { setStatus("Autorizza il microfono per effettuare la chiamata."); return; }
     }
     setCalling(true); setStatus("Avvio della chiamata Vonage…");
     try {
+      if (provider === "zadarma") {
+        setStatus("Collego l’interno SIP Zadarma…");
+        const credentials = await api.get<ZadarmaCredentials>("/api/elite/telephony/session?mode=dial");
+        const bridge = new ZadarmaNativeCall({
+          status: setStatus,
+          stream: setRemoteStream,
+          ended: () => { zadarma.current = null; setRemoteStream(null); setCalling(false); setMuted(false); setStatus("Chiamata Zadarma terminata."); },
+        });
+        zadarma.current = bridge;
+        await bridge.start(credentials, target);
+        setStatus("Chiamata Zadarma attiva. Usa il tastierino per i menu automatici.");
+        return;
+      }
+      setStatus("Avvio della chiamata Vonage…");
       const result = await api.post<{ callRef?: string; operatorStreamUrl?: string }>(demo ? "/api/vonage/voice/public/outbound" : "/api/elite/vonage-calls/direct", { phone: target, authorized: true, consent: true, browserAudio: true });
       if (!result.callRef || !result.operatorStreamUrl) throw Error("Il gestionale non ha restituito il collegamento audio.");
       const url = new URL(result.operatorStreamUrl);
@@ -151,6 +176,7 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
 
   async function digit(value: string) {
     if (!calling) { if (value === "+" && number.length) return; setNumber(current => current + value); return; }
+    if (provider === "zadarma") { zadarma.current?.dtmf(value); setStatus(`Tasto ${value} inviato alla chiamata Zadarma.`); return; }
     if (!callRef.current) return;
     const base = demo ? "/api/vonage/voice/public/calls" : "/api/elite/vonage-calls";
     await api.post(`${base}/${encodeURIComponent(callRef.current)}/dtmf`, { digits: value }).then(() => setStatus(`Tasto ${value} inviato alla chiamata.`)).catch(error => setStatus(error instanceof Error ? error.message : "Tasto non inviato."));
@@ -164,9 +190,10 @@ export default function Webphone({ api, colors: c, demo, enabled }: { api: Prime
       <Text style={{ color: c.muted }}>Provider della chiamata</Text><View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>{(["vonage", "zadarma"] as Provider[]).map(id => <Pressable key={id} accessibilityRole="radio" accessibilityState={{ selected: provider === id }} onPress={() => void chooseProvider(id)} disabled={!available(id) || calling} style={{ borderColor: provider === id ? c.accent : c.line, borderWidth: 1, borderRadius: 9, padding: 10, opacity: available(id) ? 1 : 0.45 }}><Text style={{ color: provider === id ? c.accent : c.text }}>{id === "vonage" ? "Vonage" : "Zadarma"} · {available(id) ? "collegato" : "non disponibile"}</Text></Pressable>)}</View>
       <TextInput value={number} onChangeText={setNumber} editable={!calling && enabled} keyboardType="phone-pad" placeholder="+39…" placeholderTextColor={c.muted} style={{ color: c.text, borderColor: c.line, borderWidth: 1, borderRadius: 9, padding: 13 }} />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>{["1","2","3","4","5","6","7","8","9","+","0","#"].map(value => <Pressable key={value} onPress={() => void digit(value)} disabled={!enabled} style={{ width: "29%", borderColor: c.line, borderWidth: 1, borderRadius: 9, padding: 14, opacity: enabled ? 1 : 0.5 }}><Text style={{ color: c.text, textAlign: "center", fontSize: 18 }}>{value}</Text></Pressable>)}</View>
-      {!calling ? button("Chiama senza Copilot", () => void call(), !enabled) : <>{button(muted ? "Riattiva microfono" : "Disattiva microfono", () => setMuted(value => !value))}{button("Termina chiamata", () => { Alert.alert("Termina chiamata", "Vuoi terminare la chiamata?", [{ text: "Annulla", style: "cancel" }, { text: "Termina", style: "destructive", onPress: () => void stopCall() }]); })}</>}
+      {!calling ? button("Chiama senza Copilot", () => void call(), !enabled) : <>{button(muted ? "Riattiva microfono" : "Disattiva microfono", () => setMuted(value => { const next = !value; zadarma.current?.mute(next); return next; }))}{button("Termina chiamata", () => { Alert.alert("Termina chiamata", "Vuoi terminare la chiamata?", [{ text: "Annulla", style: "cancel" }, { text: "Termina", style: "destructive", onPress: () => void stopCall() }]); })}</>}
       {!!status && <Text accessibilityRole="alert" style={{ color: c.muted }}>{status}</Text>}
     </View>
+    {remoteStream && <RTCView accessibilityLabel="Audio remoto Zadarma" streamURL={remoteStream.toURL()} style={{ width: 1, height: 1, opacity: 0 }} />}
     {button("Aggiorna collegamenti", () => void refresh())}
   </View>;
 }
