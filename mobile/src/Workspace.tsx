@@ -237,7 +237,7 @@ const menuGroups = [
     title: "ACCOUNT",
     items: [
       { id: "mail", label: "Email" },
-      { id: "assistant", label: "Vanessa" },
+      { id: "assistant", label: "AI · Vanessa / Vittoria" },
       { id: "upgrade", label: "Piano e upgrade" },
       { id: "security", label: "Sicurezza account" },
       { id: "audit", label: "Registro attività" },
@@ -273,7 +273,7 @@ const providers = [
   ["zoho", "Zoho Mail", "zoho"],
   ["wallester", "Wallester", "wallester"],
   ["stripe", "Stripe", "stripe"],
-  ["voip", "Telefonia VoIP", "voipstudio"],
+  ["voip", "Telefonia · Zadarma / Vonage", "zadarma"],
   ["contactout", "ContactOut", "contactout"],
   ["datagma", "Datagma", "datagma"],
 ];
@@ -297,7 +297,7 @@ const providerLogoSizes: Record<string, [number, number]> = {
   zoho: [38, 30],
   wallester: [42, 30],
   stripe: [74, 30],
-  voip: [124, 28],
+  voip: [116, 30],
   contactout: [38, 38],
   datagma: [124, 28],
 };
@@ -333,18 +333,18 @@ const demoProviderSamples: Record<
       "Recapito e profilo professionale di esempio",
     ],
   },
+  voip: {
+    title: "Registro chiamate Zadarma / Vonage di esempio",
+    rows: [
+      "Zadarma · +39 0461 000000 · chiamata completata",
+      "Vonage · +39 02 000000 · chiamata in ingresso",
+    ],
+  },
   calendly: {
     title: "Prossimi appuntamenti di esempio",
     rows: [
       "10 nov · 10:30 · Visita immobile · Cliente demo",
       "11 nov · 15:00 · Valutazione · Proprietario demo",
-    ],
-  },
-  voip: {
-    title: "Registro chiamate di esempio",
-    rows: [
-      "Oggi · 09:42 · Chiamata in entrata · 04:18",
-      "Ieri · 16:20 · Chiamata in uscita · 02:56",
     ],
   },
   drive: {
@@ -746,7 +746,16 @@ export default function Workspace({
     return rank >= 1;
   };
   const pageIsAvailable = (id: string) => {
-    if (id === "webphone") return rank >= 2 && (!demo || plan === "vip" || plan === "elite" || plan === "secret");
+    // The web gestionale shows Webphone in every demo edition and disables
+    // real controls outside Secret; keep the same discoverable navigation.
+    if (id === "webphone") return demo || rank >= 2;
+    // Telefonia VoIP is the web gestionale's dedicated Zadarma/Vonage page.
+    // Keep it discoverable in the demo so the two provider cards can be
+    // activated with the same fake data flow as the web app.
+    if (id === "voip") {
+      if (demo) return rank >= 2;
+      return connectionLoadedMode === mode && liveServiceReady.voip === true;
+    }
     if (
       id === "wallester" &&
       (!(["owner", "manager"] as string[]).includes(me.role) || (!demo && rank < 2))
@@ -1348,15 +1357,23 @@ export default function Workspace({
                               style={{ width: size[0], height: size[1] }}
                             />
                           ) : id === "voip" ? (
-                            <Image
-                              source={
-                                theme === "light"
-                                  ? require("../assets/providers/voipstudio-light.png")
-                                  : require("../assets/providers/voipstudio-dark.png")
-                              }
-                              resizeMode="contain"
-                              style={{ width: size[0], height: size[1] }}
-                            />
+                            <View style={[styles.row, { gap: 8 }]}>
+                              <SvgXml
+                                xml={(providerLogos as Record<string, string>).zadarma}
+                                width={116}
+                                height={30}
+                              />
+                              <Text style={styles.tiny}>+</Text>
+                              <Image
+                                source={require("../assets/providers/vonage-logo.png")}
+                                resizeMode="contain"
+                                style={{
+                                  width: 96,
+                                  height: 30,
+                                  tintColor: theme === "light" ? undefined : "#fff",
+                                }}
+                              />
+                            </View>
                           ) : (
                             <SvgXml
                               xml={adjustedXml}
@@ -1364,7 +1381,7 @@ export default function Workspace({
                               height={size[1]}
                             />
                           )}
-                          {!["datagma", "voip"].includes(id) && (
+                          {!["datagma"].includes(id) && (
                             <Text style={styles.h2}>{name}</Text>
                           )}
                           {servicePage && (isActiveDemo || isReadyLive) && (
@@ -1381,7 +1398,9 @@ export default function Workspace({
                                 ? "Attiva i dati fittizi per aprire la sezione dedicata."
                                 : id === "stripe"
                                   ? "La simulazione Stripe è disponibile nei piani Elite e Secret."
-                                  : "Passa al piano Secret per provare l’archiviazione dimostrativa."
+                                  : id === "voip"
+                                    ? "Attiva i dati fittizi per provare Zadarma e Vonage senza credenziali reali."
+                                    : "Passa al piano Secret per provare l’archiviazione dimostrativa."
                             : p?.configured || isReadyLive
                               ? "Servizio configurato. I dati reali si aprono solo dopo la verifica del collegamento."
                               : "Non collegato: configura e autorizza il servizio per aprire la sezione dedicata."}
