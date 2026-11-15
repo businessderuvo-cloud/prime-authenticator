@@ -2004,7 +2004,7 @@ export default function Workspace({
                   )}
                 </View>
               ))}
-            {editing?.entity === "properties" && editing.values.unit_id && (
+            {Boolean(editing?.entity === "properties" && editing.values.unit_id) && (
               <View style={styles.panel}>
                 <Text style={styles.h3}>Foto dell’immobile</Text>
                 <Text style={styles.muted}>
