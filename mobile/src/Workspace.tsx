@@ -2008,7 +2008,7 @@ export default function Workspace({
               <View style={styles.panel}>
                 <Text style={styles.h3}>Foto dell’immobile</Text>
                 <Text style={styles.muted}>
-                  {(data.media || []).filter((item) => item.unit_id === editing.values.unit_id).length} foto caricate
+                  {(data.media || []).filter((item) => item.unit_id === editing!.values.unit_id).length} foto caricate
                 </Text>
                 {button("Aggiungi foto", () => {
                   void run(async () => {
@@ -2020,7 +2020,7 @@ export default function Workspace({
                     const file = result.assets[0];
                     const bytes = await (await fetch(file.uri)).arrayBuffer();
                     await api.upload(
-                      "/api/media?unit_id=" + encodeURIComponent(String(editing.values.unit_id)),
+                      "/api/media?unit_id=" + encodeURIComponent(String(editing!.values.unit_id)),
                       bytes,
                       file.mimeType || "image/jpeg",
                     );
