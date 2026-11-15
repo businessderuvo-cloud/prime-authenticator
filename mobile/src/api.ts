@@ -195,6 +195,39 @@ export class PrimeApi {
   post<T>(path: string, body: unknown = {}) {
     return this.request<T>(path, "POST", body);
   }
+  async upload<T>(path: string, bytes: ArrayBuffer, mimeType: string) {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(),
+      this.mode === "demo" ? 90000 : 25000,
+    );
+    try {
+      const response = await this.transport(
+        ORIGIN + (this.mode === "demo" ? "/demo" : "") + path,
+        {
+          method: "POST",
+          credentials: "omit",
+          signal: controller.signal,
+          headers: {
+            Accept: "application/json",
+            "Content-Type": mimeType,
+            ...(this.cookie ? { Cookie: this.cookie } : {}),
+            ...(this.csrf ? { "X-CSRF-Token": this.csrf } : {}),
+          },
+          body: bytes,
+        },
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new ApiError(
+          data?.error || data?.message || "Caricamento non riuscito (" + response.status + ").",
+          response.status,
+        );
+      return data as T;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   eliteTool<T>(body: unknown, token: string) {
     return this.request<T>("/api/elite/tools", "POST", body, {
       "X-Prime-Session": token,

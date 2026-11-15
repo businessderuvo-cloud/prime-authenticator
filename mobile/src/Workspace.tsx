@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import * as DocumentPicker from "expo-document-picker";
 import Svg, { Path, SvgXml } from "react-native-svg";
 import { router, useLocalSearchParams } from "expo-router";
 import { Me, PrimeApi, Row, Mode } from "./api";
@@ -126,12 +127,12 @@ const palettes: Record<
     accent: "#f5a04f",
   },
   christmas: {
-    bg: "#080a08",
-    panel: "#141b14",
-    line: "#354535",
-    text: "#f4f2e8",
-    muted: "#b9bfaf",
-    accent: "#d3b978",
+    bg: "#080606",
+    panel: "#1b0808",
+    line: "#8a2020",
+    text: "#fff0ed",
+    muted: "#ddbab6",
+    accent: "#ff5757",
   },
 };
 const themeNames: Record<string, string> = {
@@ -152,7 +153,7 @@ const themeDetails: Record<string, string> = {
   secret: "Nero e oro",
   valentine: "Nero e viola · 14 febbraio",
   halloween: "Nero e arancione · 31 ottobre",
-  christmas: "Verde bosco e oro · 21–30 dicembre",
+  christmas: "Nero e rosso scuro · 21–30 dicembre",
 };
 const monthNames = [
   "Gennaio",
@@ -273,7 +274,8 @@ const providers = [
   ["zoho", "Zoho Mail", "zoho"],
   ["wallester", "Wallester", "wallester"],
   ["stripe", "Stripe", "stripe"],
-  ["voip", "Telefonia · Zadarma / Vonage", "zadarma"],
+  ["zadarma", "Telefonia · Zadarma", "zadarma"],
+  ["vonage", "Telefonia · Vonage", "vonage"],
   ["contactout", "ContactOut", "contactout"],
   ["datagma", "Datagma", "datagma"],
 ];
@@ -282,7 +284,7 @@ const providerCategories: [string, string[]][] = [
   ["INDAGINI", ["datagma", "contactout"]],
   ["ARCHIVIAZIONE", ["drive", "onedrive", "dropbox"]],
   ["CALENDARI", ["google", "apple", "calendly"]],
-  ["COMUNICAZIONI", ["whatsapp", "gmail", "outlook", "zoho", "voip"]],
+  ["COMUNICAZIONI", ["whatsapp", "gmail", "outlook", "zoho", "zadarma", "vonage"]],
 ];
 const providerLogoSizes: Record<string, [number, number]> = {
   google: [30, 30],
@@ -297,7 +299,8 @@ const providerLogoSizes: Record<string, [number, number]> = {
   zoho: [38, 30],
   wallester: [42, 30],
   stripe: [74, 30],
-  voip: [116, 30],
+  zadarma: [116, 30],
+  vonage: [96, 30],
   contactout: [38, 38],
   datagma: [124, 28],
 };
@@ -308,6 +311,8 @@ const providerPageService: Record<string, string> = {
   contactout: "contactout",
   calendly: "calendly",
   voip: "voip",
+  zadarma: "zadarma",
+  vonage: "vonage",
   storage_drive: "drive",
   storage_onedrive: "onedrive",
   storage_dropbox: "dropbox",
@@ -315,6 +320,9 @@ const providerPageService: Record<string, string> = {
 const providerServicePage = Object.fromEntries(
   Object.entries(providerPageService).map(([page, service]) => [service, page]),
 ) as Record<string, string>;
+providerServicePage.voip = "voip";
+providerServicePage.zadarma = "voip";
+providerServicePage.vonage = "voip";
 const demoProviderSamples: Record<
   string,
   { title: string; rows: string[] }
@@ -334,7 +342,7 @@ const demoProviderSamples: Record<
     ],
   },
   voip: {
-    title: "Registro chiamate Zadarma / Vonage di esempio",
+    title: "Registro chiamate Zadarma e Vonage di esempio",
     rows: [
       "Zadarma · +39 0461 000000 · chiamata completata",
       "Vonage · +39 02 000000 · chiamata in ingresso",
@@ -464,6 +472,8 @@ export default function Workspace({
   const [probe, setProbe] = useState<{ title: string; text: string } | null>(
     null,
   );
+  const [mailInbox, setMailInbox] = useState<Row[]>([]);
+  const [mailboxOpen, setMailboxOpen] = useState(false);
   const nav = (id: string) => {
     router.setParams({ page: id });
     setMenu(false);
@@ -597,6 +607,10 @@ export default function Workspace({
         setData((old) => ({ ...old, [id]: values }));
       }),
     );
+    if (entity === "properties") {
+      const media = await api.get<Row[]>("/api/media").catch(() => []);
+      setData((old) => ({ ...old, media }));
+    }
     setEditing({
       entity,
       row,
@@ -742,7 +756,7 @@ export default function Workspace({
     if (id === "stripe") return rank >= 3;
     if (id === "wallester") return rank >= 1;
     if (["drive", "onedrive", "dropbox"].includes(id)) return rank >= 4;
-    if (id === "voip") return rank >= 2;
+    if (["voip", "zadarma", "vonage"].includes(id)) return rank >= 2;
     return rank >= 1;
   };
   const pageIsAvailable = (id: string) => {
@@ -752,9 +766,12 @@ export default function Workspace({
     // Telefonia VoIP is the web gestionale's dedicated Zadarma/Vonage page.
     // Keep it discoverable in the demo so the two provider cards can be
     // activated with the same fake data flow as the web app.
-    if (id === "voip") {
+    if (["voip", "zadarma", "vonage"].includes(id)) {
       if (demo) return rank >= 2;
-      return connectionLoadedMode === mode && liveServiceReady.voip === true;
+      return connectionLoadedMode === mode &&
+        (id === "voip"
+          ? liveServiceReady.voip === true
+          : liveServiceReady[id] === true);
     }
     if (
       id === "wallester" &&
@@ -770,8 +787,12 @@ export default function Workspace({
       return true;
     }
     if (id === "stripe" && !demo) return liveStripeEnabled;
-    if (demo)
+    if (demo) {
+      if (service === "voip")
+        return canUseDemoProvider(service) &&
+          demoServices.some((value) => ["voip", "zadarma", "vonage"].includes(value));
       return canUseDemoProvider(service) && demoServices.includes(service);
+    }
     return connectionLoadedMode === mode && liveServiceReady[service] === true;
   };
   const liveStripeEnabled =
@@ -793,7 +814,9 @@ export default function Workspace({
   useEffect(() => {
     if (
       pendingDemoPage &&
-      demoServices.includes(providerPageService[pendingDemoPage])
+      (demoServices.includes(providerPageService[pendingDemoPage]) ||
+        (pendingDemoPage === "voip" &&
+          demoServices.some((value) => ["zadarma", "vonage", "voip"].includes(value))))
     ) {
       const target = pendingDemoPage;
       const timer = setTimeout(() => {
@@ -806,6 +829,13 @@ export default function Workspace({
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [page]);
+  useEffect(() => {
+    if (!me) return;
+    void api
+      .get<Row[]>("/api/connect/mail-notifications")
+      .then((items) => setMailInbox(items.slice(0, 10)))
+      .catch(() => setMailInbox([]));
+  }, [api, me]);
   useEffect(() => {
     let active = true;
     const loadConnectionStatus = async () => {
@@ -863,6 +893,8 @@ export default function Workspace({
         stripe: isReady("stripe"),
         wallester: isReady("wallester"),
         voip: isReady("voip"),
+        zadarma: isReady("zadarma"),
+        vonage: isReady("vonage"),
       };
       if (mode === "live") {
         const checks: [string, string][] = [
@@ -898,10 +930,11 @@ export default function Workspace({
             next.wallester =
               value.configured === true || value.connected === true;
           if (id === "voip")
-            next.voip =
-              (value.providers as { configured?: boolean }[] | undefined)?.some(
-                (provider) => provider.configured === true,
-              ) === true;
+            for (const provider of (value.providers as { provider?: string; configured?: boolean }[] | undefined) || []) {
+              if (provider.provider === "zadarma") next.zadarma = provider.configured === true;
+              if (provider.provider === "vonage") next.vonage = provider.configured === true;
+            }
+            next.voip = next.zadarma === true || next.vonage === true;
           if (id === "stripe_test" || id === "stripe_live")
             next.stripe = next.stripe || value.configured === true;
         });
@@ -997,6 +1030,13 @@ export default function Workspace({
           onPress={() => setPicker("theme")}
         >
           <Icon color={c.accent} name="sun" />
+        </Pressable>
+        <Pressable
+          accessibilityLabel={"Inbox email, " + mailInbox.length + " notifiche"}
+          onPress={() => setMailboxOpen(true)}
+          style={styles.badge}
+        >
+          <Text style={styles.small}>✉ {mailInbox.length || ""}</Text>
         </Pressable>
         <Pressable onPress={() => setPicker("mode")} style={styles.badge}>
           <Text style={styles.small}>{mode.toUpperCase()}</Text>
@@ -1321,7 +1361,8 @@ export default function Workspace({
                 ([id]) =>
                   ids.includes(id) &&
                   (page === "connect" ||
-                    id === page.replace("storage_", "")),
+                    id === page.replace("storage_", "") ||
+                    (page === "voip" && ["zadarma", "vonage"].includes(id))),
               );
               if (!group.length) return null;
               return (
@@ -1356,23 +1397,21 @@ export default function Workspace({
                               resizeMode="contain"
                               style={{ width: size[0], height: size[1] }}
                             />
+                          ) : id === "zadarma" ? (
+                            <SvgXml
+                              xml={(providerLogos as Record<string, string>).zadarma}
+                              width={116}
+                              height={30}
+                            />
+                          ) : id === "vonage" ? (
+                            <Image
+                              source={require("../assets/providers/vonage-logo.png")}
+                              resizeMode="contain"
+                              style={{ width: 96, height: 30 }}
+                            />
                           ) : id === "voip" ? (
                             <View style={[styles.row, { gap: 8 }]}>
-                              <SvgXml
-                                xml={(providerLogos as Record<string, string>).zadarma}
-                                width={116}
-                                height={30}
-                              />
-                              <Text style={styles.tiny}>+</Text>
-                              <Image
-                                source={require("../assets/providers/vonage-logo.png")}
-                                resizeMode="contain"
-                                style={{
-                                  width: 96,
-                                  height: 30,
-                                  tintColor: theme === "light" ? undefined : "#fff",
-                                }}
-                              />
+                              <Text style={styles.h2}>Telefonia</Text>
                             </View>
                           ) : (
                             <SvgXml
@@ -1489,7 +1528,9 @@ export default function Workspace({
           page !== "stripe" &&
           page !== "wallester" &&
           providerPageService[page] &&
-          demoServices.includes(providerPageService[page]) && (
+          (demoServices.includes(providerPageService[page]) ||
+            (page === "voip" &&
+              demoServices.some((value) => ["voip", "zadarma", "vonage"].includes(value)))) && (
             <View style={styles.panel}>
               <Text style={styles.eyebrow}>
                 DEMO · {providerPageService[page].toUpperCase()} · DATI FITTIZI
@@ -1563,12 +1604,12 @@ export default function Workspace({
           <Vanessa
             api={api}
             colors={c}
-            allowed={rank >= 2}
+            allowed={demo || rank >= 2}
             phoneCopilotAllowed={!demo || plan === "secret"}
             interpreterAllowed={!demo && rank >= 3}
             agentId={assistantAgent}
             onAgentChange={setAssistantAgent}
-            availableAgents={rank >= 2 ? ["vanessa", "vittoria"] : ["vanessa"]}
+            availableAgents={demo || rank >= 2 ? ["vanessa", "vittoria"] : ["vanessa"]}
           />
           {page === "assistant" && rank >= 2 && <VanessaOperations api={api} colors={c} owner={me.role === "owner"} agentId={assistantAgent} elite={rank >= 3} />}
         </View>
@@ -1607,7 +1648,22 @@ export default function Workspace({
             </Text>
             {((connection.portals as Row[]) || []).map((p) => (
               <View key={text(p.id)} style={styles.panel}>
-                <Text style={styles.h2}>{text(p.name)}</Text>
+                <View style={styles.row}>
+                  {p.id === "idealista" ? (
+                    <Image source={require("../assets/portals/idealista.png")} resizeMode="contain" style={{ width: 48, height: 48 }} />
+                  ) : p.id === "immobiliare" ? (
+                    <Image source={require("../assets/portals/immobiliare.png")} resizeMode="contain" style={{ width: 48, height: 48 }} />
+                  ) : ["casa", "subito", "wikicasa"].includes(text(p.id)) ? (
+                    <SvgXml
+                      xml={(providerLogos as Record<string, string>)["portal_" + text(p.id)]}
+                      width={48}
+                      height={48}
+                    />
+                  ) : (
+                    <View style={{ width: 48, height: 48 }} />
+                  )}
+                  <Text style={styles.h2}>{text(p.name)}</Text>
+                </View>
                 <Text style={styles.muted}>{text(p.status)}</Text>
                 {button("Prepara bozza", () =>
                   setChoices({
@@ -1698,6 +1754,28 @@ export default function Workspace({
           <Text style={styles.tiny}>Menu</Text>
         </Pressable>
       </View>
+      <Modal
+        visible={mailboxOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMailboxOpen(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.h2}>Inbox · Ultime 10 notifiche</Text>
+            {mailInbox.length ? mailInbox.map((item) => (
+              <View key={item.id} style={styles.panel}>
+                <Text style={styles.h3}>{text(item.sender || item.from || "Email")}</Text>
+                <Text style={styles.muted}>{text(item.subject || "Senza oggetto")}</Text>
+              </View>
+            )) : (
+              <Text style={styles.muted}>Nessuna notifica email. Gestisci Gmail e Outlook da PRIME Connect.</Text>
+            )}
+            {button("Apri Email", () => { setMailboxOpen(false); nav("mail"); })}
+            {button("Chiudi", () => setMailboxOpen(false))}
+          </View>
+        </View>
+      </Modal>
       <Modal
         visible={menu}
         animationType="slide"
@@ -1926,6 +2004,32 @@ export default function Workspace({
                   )}
                 </View>
               ))}
+            {editing?.entity === "properties" && editing.values.unit_id && (
+              <View style={styles.panel}>
+                <Text style={styles.h3}>Foto dell’immobile</Text>
+                <Text style={styles.muted}>
+                  {(data.media || []).filter((item) => item.unit_id === editing.values.unit_id).length} foto caricate
+                </Text>
+                {button("Aggiungi foto", () => {
+                  void run(async () => {
+                    const result = await DocumentPicker.getDocumentAsync({
+                      type: ["image/jpeg", "image/png", "image/webp"],
+                      copyToCacheDirectory: true,
+                    });
+                    if (result.canceled || !result.assets[0]) return;
+                    const file = result.assets[0];
+                    const bytes = await (await fetch(file.uri)).arrayBuffer();
+                    await api.upload(
+                      "/api/media?unit_id=" + encodeURIComponent(String(editing.values.unit_id)),
+                      bytes,
+                      file.mimeType || "image/jpeg",
+                    );
+                    const media = await api.get<Row[]>("/api/media");
+                    setData((old) => ({ ...old, media }));
+                  });
+                }, true)}
+              </View>
+            )}
             {error && <Text style={{ color: "#e36c6c" }}>{error}</Text>}
             {button("Salva scheda", () => void run(save), true)}
             {editing?.row &&
